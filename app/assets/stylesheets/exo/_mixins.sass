@@ -56,13 +56,13 @@
     background: no-repeat center center
     +image-background($path)
 
-@mixin button-text-icon($path)
+@mixin button-text-icon($path, $margin-right: 6px, $margin-top: -1px)
   &:before
     content: " "
     display: inline-block
     width: image-width($path)
     height: 100%
-    margin: -1px 4px 0 0
+    margin: $margin-top $margin-right 0 0
     vertical-align: middle
     background: no-repeat center center
     +image-background($path)

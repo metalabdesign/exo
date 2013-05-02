@@ -1,3 +1,5 @@
+#= require exo/touch_widget
+
 class @Exo.Widgets.Carousel extends Exo.TouchWidget
 
   cancelBubble = (e) ->

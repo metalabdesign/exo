@@ -1,4 +1,4 @@
-class @Exo.TouchStack extends Exo.Stack
+class @Exo.Touch.Stack extends Exo.Stack
 
   constructor: (@size = 10, @axis = null) ->
     super

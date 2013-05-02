@@ -1,6 +1,4 @@
-#= require exo/touch_widget
-
-class @Exo.Widgets.Carousel extends Exo.TouchWidget
+class @Exo.Touch.Widgets.Carousel extends Exo.Touch.Widget
 
   cancelBubble = (e) ->
     e.stopImmediatePropagation()

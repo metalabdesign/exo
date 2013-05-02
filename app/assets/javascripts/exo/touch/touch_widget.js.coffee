@@ -1,4 +1,4 @@
-TouchWidget = class @Exo.TouchWidget extends Exo.Widget
+TouchWidget = class @Exo.Touch.Widget extends Exo.Widget
 
   defaults: {}
 

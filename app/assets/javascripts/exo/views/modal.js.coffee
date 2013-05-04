@@ -11,39 +11,39 @@ class @Exo.Views.Modal extends Exo.View
   scrollable: true
   zIndex: 1024
 
+  headerSelector:  "> .modal-header"
+  sidebarSelect:   "> .modal-sidebar"
+  contentSelector: "> .modal-content"
+  footerSelector:  "> .modal-footer"
+
   positionElement: ->
     @dimensions ||= { width: null, height: null }
 
-    $header = @$("> .modal-header")
-    $content = @$("> .modal-content")
-    $sidebar = @$("> .modal-sidebar")
-    $footer  = @$("> .modal-footer")
-
-    headerHeight = $header.outerHeight()
+    headerHeight = @$header.outerHeight()
 
     setHeight = (height) =>
       @dimensions.height = height
       @$el.height height
 
-      $content.css(position: "absolute")
-      $footer.css(position: "absolute")
+      @$content.css(position: "absolute")
+      @$footer.css(position: "absolute")
 
-      $content.add($sidebar).css
+      @$content.add(@$sidebar).css
         top: headerHeight
-        bottom: $footer.outerHeight()
+        bottom: @$footer.outerHeight()
 
     if @height == "auto"
       @$el.css(height: "auto")
-      $content.css(position: "relative")
-      $footer.css(position: "static")
+      @$content.css(position: "relative")
+      @$footer.css(position: "static")
 
       elHeight = @_detectHeightForPositioning()
       maxHeight = window.innerHeight - 160
 
-      contentHeight = $content.height()
-      if (contentHeight + $footer.height() + headerHeight) >= maxHeight
+      contentHeight = @$content.height()
+      if (contentHeight + @$footer.height() + headerHeight) >= maxHeight
         setHeight maxHeight
-      else if $sidebar.length || contentHeight == 0
+      else if @$sidebar.length || contentHeight == 0
         setHeight elHeight
 
     else
@@ -51,7 +51,7 @@ class @Exo.Views.Modal extends Exo.View
 
     if @width == "auto"
       @$el.css(width: "auto")
-      $content.css(position: "relative")
+      @$content.css(position: "relative")
       @dimensions.width = @$el.width()
     else if @width
       @dimensions.width = @width
@@ -110,14 +110,19 @@ class @Exo.Views.Modal extends Exo.View
   render: ->
     super
 
+    @$header  = @$(@headerSelector)
+    @$content = @$(@contentSelector)
+    @$sidebar = @$(@sidebarSelector)
+    @$footer  = @$(@footerSelector)
+
     @$el.css(zIndex: @zIndex)
     @$el.addClass("not-scrollable") unless @scrollable
 
-    @$el.addClass("with-footer") if @$("> .modal-footer").length
-    @$el.addClass("with-sidebar") if @$("> .modal-sidebar").length
+    @$el.addClass("with-footer") if @$footer.length
+    @$el.addClass("with-sidebar") if @$sidebar.length
 
     if @content
-      @$("> .modal-content").append(@content.el || @content)
+      @$content.append(@content.el || @content)
 
     return this
 

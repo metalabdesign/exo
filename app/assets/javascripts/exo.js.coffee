@@ -3,6 +3,8 @@
 #= require lib/handlebars.runtime
 #= require lib/thorax
 #
+#= require exo/keyboard_manager
+#
 #= require exo/views
 #= require exo/mixins
 #= require exo/widgets

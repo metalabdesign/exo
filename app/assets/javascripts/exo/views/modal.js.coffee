@@ -10,6 +10,7 @@ class @Exo.Views.Modal extends Exo.View
   visible: false
   scrollable: true
   zIndex: 1024
+  destroyOnHide: false
 
   headerSelector:  "> .modal-header"
   sidebarSelect:   "> .modal-sidebar"
@@ -100,6 +101,8 @@ class @Exo.Views.Modal extends Exo.View
     @$el.hide()
     @getOverlay().hide()
     @trigger "hide"
+    @destroy() if @destroyOnHide
+    this
 
   toggle: ->
     if @visible

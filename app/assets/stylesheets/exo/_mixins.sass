@@ -1,5 +1,5 @@
 @mixin image-background($path)
-  background-image: image-url($path)
+  +background-image-retina($path)
   background-size: image-width($path) image-height($path)
 
 @mixin image-size($path)
@@ -73,3 +73,17 @@
 @mixin clear-tap-highlight()
   // Android < 4 MUST be transparent white. Anything else fails to blow away the focus box
   -webkit-tap-highlight-color: rgba(255,255,255,0)
+
+// Retina helper mixins for Compass
+// http://www.joelambert.co.uk
+//
+// Copyright 2012, Joe Lambert.
+// Free to use under the MIT license.
+// http://joelambert.mit-license.org/
+
+@mixin background-image-retina($path)
+  background-image: image-url($path)
+  background-color: retina_filename($path)
+  @if file_exists(retina_filename($path))
+    @media only screen and (-webkit-min-device-pixel-ratio: 1.5)
+      background-image: image-url(retina_filename($path))

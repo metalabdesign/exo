@@ -35,7 +35,7 @@ class @Exo.Views.Modal extends Exo.View
 
     if @height == "auto"
       @$el.css(height: "auto")
-      @$content.css(position: "relative")
+      @$content.css(position: "relative", top: 0)
       @$footer.css(position: "static")
 
       elHeight = @_detectHeightForPositioning()

@@ -5,7 +5,9 @@
 #= require lib/implements
 #
 #= require exo/namespace
+#= require exo/array_controller
 #= require exo/keyboard_manager
+#= require exo/matcher
 #
 #= require exo/views
 #= require exo/mixins

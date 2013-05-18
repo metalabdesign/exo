@@ -1,116 +1,113 @@
-@Exo ||= {}
-@Exo.Mixins ||= {}
-
 Exo.View.registerMixin("selectable", ->
   @selectableClass = 'selected'
   @selectableDeselectOnClick = false
+  
+  # event = if Modernizr.touch then "touchstart" else "click"
+  event = "click"
+
+  $(@el).delegate @selectableSelector, event, (e) =>
+    # document.activeElement.blur() if document.activeElement
+    # e.stopPropagation()
+
+    @shiftSelectIndex = 0
+
+    elem = $(e.currentTarget)
+
+    if e.metaKey || e.ctrlKey # command click
+      @toggleSelection(elem)
+    else if e.shiftKey # shift click
+      if @lastSelected
+        @deselectAll()
+        @selectRange(@lastSelected, elem)
+      else
+        @lastSelected = elem
+    else
+      if @getSelectedElements().length > 1 && @isSelected(elem)
+        @deselectOthers(elem)
+      else
+        @deselectOthers(elem, false)
+        if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
+        @notifySelectionChanged()
+
+      @lastSelected = elem
 , {
   initializeSelection: ->
     @lastSelected = false
     @shiftSelectIndex = 0
 
-      # event = if Modernizr.touch then "touchstart" else "click"
-      event = "click"
+  notifySelectionChanged: ->
+    @trigger "selection:change", @getSelectedModels(), this
 
-      $(@el).delegate @selectableSelector, event, (e) =>
-        # document.activeElement.blur() if document.activeElement
-        # e.stopPropagation()
+  isSelected: (elem) -> elem.hasClass(@selectableClass)
 
-        @shiftSelectIndex = 0
+  select: (elem, notify = true) ->
+    changes = elem.not(".#{@selectableClass}").addClass(@selectableClass)
+    @notifySelectionChanged() if changes.length and notify
+    return
 
-        elem = $(e.currentTarget)
+  deselect: (elem, notify = true) ->
+    changes = elem.filter(".#{@selectableClass}").removeClass(@selectableClass)
+    @notifySelectionChanged() if changes.length and notify
+    return
 
-        if e.metaKey || e.ctrlKey # command click
-          @toggleSelection(elem)
-        else if e.shiftKey # shift click
-          if @lastSelected
-            @deselectAll()
-            @selectRange(@lastSelected, elem)
-          else
-            @lastSelected = elem
-        else
-          if @getSelectedElements().length > 1 && @isSelected(elem)
-            @deselectOthers(elem)
-          else
-            @deselectOthers(elem, false)
-            if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
-            @notifySelectionChanged()
+  selectRange: (start, end) ->
+    all = @getItemsForSelection()
+    a = if typeof start == 'number' then start else all.index(start)
+    b = if typeof end == 'number' then end else all.index(end)
+    b = Math.min(Math.max(0, b), all.length-1)
 
-          @lastSelected = elem
+    if b < a
+      @select all.slice(b, a+1)
+    else
+      @select all.slice(a, b+1)
 
-    notifySelectionChanged: ->
-      @trigger "selection:change", @getSelectedModels(), this
+    return
 
-    isSelected: (elem) -> elem.hasClass(@selectableClass)
+  selectInDirection: (dir, e) ->
+    all = @getItemsForSelection().removeClass(@selectableClass)
 
-    select: (elem, notify = true) ->
-      changes = elem.not(".#{@selectableClass}").addClass(@selectableClass)
-      @notifySelectionChanged() if changes.length and notify
-      return
+    if e.shiftKey && @lastSelected
+      @shiftSelectIndex += dir
+      @selectRange(@lastSelected, all.index(@lastSelected) + @shiftSelectIndex)
+    else
+      @shiftSelectIndex = 0;
+      i = (if @lastSelected then all.index(@lastSelected) else dir * -1) + dir
+      i = Math.min(Math.max(0, i), all.length-1)
+      @lastSelected = all.eq(i)
+      @select @lastSelected
 
-    deselect: (elem, notify = true) ->
-      changes = elem.filter(".#{@selectableClass}").removeClass(@selectableClass)
-      @notifySelectionChanged() if changes.length and notify
-      return
+  selectAll: -> @select @getItemsForSelection()
 
-    selectRange: (start, end) ->
-      all = @getItemsForSelection()
-      a = if typeof start == 'number' then start else all.index(start)
-      b = if typeof end == 'number' then end else all.index(end)
-      b = Math.min(Math.max(0, b), all.length-1)
+  deselectAll: -> @deselect @getItemsForSelection()
 
-      if b < a
-        @select all.slice(b, a+1)
-      else
-        @select all.slice(a, b+1)
+  deselectOthers: (elem, notify = true) ->
+    @deselect @getItemsForSelection().not(elem), notify
 
-      return
+  toggleSelection: (elem, notify = true) ->
+    if @isSelected(elem) then @deselect(elem, notify) else @select(elem, notify)
 
-    selectInDirection: (dir, e) ->
-      all = @getItemsForSelection().removeClass(@selectableClass)
+  getSelectedElements: -> @$("#{@selectableSelector}.#{@selectableClass}")
 
-      if e.shiftKey && @lastSelected
-        @shiftSelectIndex += dir
-        @selectRange(@lastSelected, all.index(@lastSelected) + @shiftSelectIndex)
-      else
-        @shiftSelectIndex = 0;
-        i = (if @lastSelected then all.index(@lastSelected) else dir * -1) + dir
-        i = Math.min(Math.max(0, i), all.length-1)
-        @lastSelected = all.eq(i)
-        @select @lastSelected
+  getSelectedModels: ->
+    _this = this
+    @getSelectedElements().map () ->
+      _this.collection.getByCid this.getAttribute("data-model-cid")
 
-    selectAll: -> @select @getItemsForSelection()
+  getItemsForSelection: ->
+    # TODO caching
+    @$(@selectableSelector)
 
-    deselectAll: -> @deselect @getItemsForSelection()
+  selectByModel: (model) ->
+    return if not model = @collection.get model
+    @select $(model.el)
+    this
 
-    deselectOthers: (elem, notify = true) ->
-      @deselect @getItemsForSelection().not(elem), notify
-
-    toggleSelection: (elem, notify = true) ->
-      if @isSelected(elem) then @deselect(elem, notify) else @select(elem, notify)
-
-    getSelectedElements: -> @$("#{@selectableSelector}.#{@selectableClass}")
-
-    getSelectedModels: ->
-      _this = this
-      @getSelectedElements().map () ->
-        _this.collection.getByCid this.getAttribute("data-model-cid")
-
-    getItemsForSelection: ->
-      # TODO caching
-      @$(@selectableSelector)
-
-    selectByModel: (model) ->
-      return if not model = @collection.get model
-      @select $(model.el)
-      this
-
-    handleKey: (key, e) ->
-      switch key
-        when 'up', '⇧+up'
-          @selectInDirection -1, e
-          e.preventDefault()
-        when 'down', '⇧+down'
-          @selectInDirection 1, e
-          e.preventDefault()
-
+  handleKey: (key, e) ->
+    switch key
+      when 'up', '⇧+up'
+        @selectInDirection -1, e
+        e.preventDefault()
+      when 'down', '⇧+down'
+        @selectInDirection 1, e
+        e.preventDefault()
+})

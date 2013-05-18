@@ -1,43 +1,39 @@
-@Exo ||= {}
-@Exo.Mixins ||= {}
+Exo.View.registerMixin("selectable", ->
+  @selectableClass = 'selected'
+  @selectableDeselectOnClick = false
+  
+  # event = if Modernizr.touch then "touchstart" else "click"
+  event = "click"
 
-class @Exo.Mixins.Selectable
+  $(@el).delegate @selectableSelector, event, (e) =>
+    # document.activeElement.blur() if document.activeElement
+    # e.stopPropagation()
 
-  selectableClass: 'selected'
-  selectableDeselectOnClick: false
+    @shiftSelectIndex = 0
 
+    elem = $(e.currentTarget)
+
+    if e.metaKey || e.ctrlKey # command click
+      @toggleSelection(elem)
+    else if e.shiftKey # shift click
+      if @lastSelected
+        @deselectAll()
+        @selectRange(@lastSelected, elem)
+      else
+        @lastSelected = elem
+    else
+      if @getSelectedElements().length > 1 && @isSelected(elem)
+        @deselectOthers(elem)
+      else
+        @deselectOthers(elem, false)
+        if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
+        @notifySelectionChanged()
+
+      @lastSelected = elem
+, {
   initializeSelection: ->
     @lastSelected = false
     @shiftSelectIndex = 0
-
-    # event = if Modernizr.touch then "touchstart" else "click"
-    event = "click"
-
-    $(@el).delegate @selectableSelector, event, (e) =>
-      # document.activeElement.blur() if document.activeElement
-      # e.stopPropagation()
-
-      @shiftSelectIndex = 0
-
-      elem = $(e.currentTarget)
-
-      if e.metaKey || e.ctrlKey # command click
-        @toggleSelection(elem)
-      else if e.shiftKey # shift click
-        if @lastSelected
-          @deselectAll()
-          @selectRange(@lastSelected, elem)
-        else
-          @lastSelected = elem
-      else
-        if @getSelectedElements().length > 1 && @isSelected(elem)
-          @deselectOthers(elem)
-        else
-          @deselectOthers(elem, false)
-          if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
-          @notifySelectionChanged()
-
-        @lastSelected = elem
 
   notifySelectionChanged: ->
     @trigger "selection:change", @getSelectedModels(), this
@@ -114,4 +110,4 @@ class @Exo.Mixins.Selectable
       when 'down', '⇧+down'
         @selectInDirection 1, e
         e.preventDefault()
-
+})

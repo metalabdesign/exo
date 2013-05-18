@@ -3,6 +3,7 @@
 #= require lib/handlebars.runtime
 #= require lib/thorax
 #
+#= require exo/namespace
 #= require exo/keyboard_manager
 #
 #= require exo/views

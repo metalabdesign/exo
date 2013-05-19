@@ -1,8 +1,4 @@
-@Exo ||= {}
-@Exo.Mixins ||= {}
-
-class @Exo.Mixins.Form
-
+Exo.View.registerMixin("form", null, {
   showErrors: (allErrors, message=false) ->
     for namespace, errors of allErrors
       for field, error of errors
@@ -49,3 +45,4 @@ class @Exo.Mixins.Form
       $message.remove()
 
     this
+})

@@ -1,4 +1,4 @@
-Exo.View.registerMixin("form", ->, {
+Exo.View.registerMixin("form", (->), {
   showErrors: (allErrors, message=false) ->
     for namespace, errors of allErrors
       for field, error of errors

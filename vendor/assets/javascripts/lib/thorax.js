@@ -2376,7 +2376,7 @@ Thorax.mixinLoadable = function(target, useParent) {
       if (!that || !that.el) {
         return;
       }
-      
+
       that._isLoading = false;
       $(that.el).removeClass(that._loadingClassName);
       // used by loading helper

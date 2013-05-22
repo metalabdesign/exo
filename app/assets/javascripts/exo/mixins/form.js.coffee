@@ -1,8 +1,12 @@
 Exo.View.registerMixin("form", (->), {
-  showErrors: (allErrors, message=false) ->
-    for namespace, errors of allErrors
-      for field, error of errors
-        @showError("#{ namespace }[#{ field }]", error, message)
+  showErrors: (errors, message=false) ->
+    for field, error of errors
+      if _.isObject(error) && !_.isArray(error)
+        namespace = field
+        for field, e of error
+          @showError("#{ namespace }[#{ field }]", e, message)
+      else
+        @showError(field, error, message)
 
     this
 

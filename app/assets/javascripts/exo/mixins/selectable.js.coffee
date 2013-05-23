@@ -1,39 +1,43 @@
-Exo.View.registerMixin("selectable", ->
-  @selectableClass = 'selected'
-  @selectableDeselectOnClick = false
-  
-  # event = if Modernizr.touch then "touchstart" else "click"
-  event = "click"
+callback = ->
+  @initializeSelection()
 
-  $(@el).delegate @selectableSelector, event, (e) =>
-    # document.activeElement.blur() if document.activeElement
-    # e.stopPropagation()
+Exo.View.registerMixin("selectable", callback, {
 
-    @shiftSelectIndex = 0
+  selectableClass: 'selected'
+  selectableDeselectOnClick: false
 
-    elem = $(e.currentTarget)
-
-    if e.metaKey || e.ctrlKey # command click
-      @toggleSelection(elem)
-    else if e.shiftKey # shift click
-      if @lastSelected
-        @deselectAll()
-        @selectRange(@lastSelected, elem)
-      else
-        @lastSelected = elem
-    else
-      if @getSelectedElements().length > 1 && @isSelected(elem)
-        @deselectOthers(elem)
-      else
-        @deselectOthers(elem, false)
-        if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
-        @notifySelectionChanged()
-
-      @lastSelected = elem
-, {
   initializeSelection: ->
     @lastSelected = false
     @shiftSelectIndex = 0
+
+    # event = if Modernizr.touch then "touchstart" else "click"
+    event = "click"
+
+    $(@el).delegate @selectableSelector, event, (e) =>
+      # document.activeElement.blur() if document.activeElement
+      # e.stopPropagation()
+
+      @shiftSelectIndex = 0
+
+      elem = $(e.currentTarget)
+
+      if e.metaKey || e.ctrlKey # command click
+        @toggleSelection(elem)
+      else if e.shiftKey # shift click
+        if @lastSelected
+          @deselectAll()
+          @selectRange(@lastSelected, elem)
+        else
+          @lastSelected = elem
+      else
+        if @getSelectedElements().length > 1 && @isSelected(elem)
+          @deselectOthers(elem)
+        else
+          @deselectOthers(elem, false)
+          if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
+          @notifySelectionChanged()
+
+        @lastSelected = elem
 
   notifySelectionChanged: ->
     @trigger "selection:change", @getSelectedModels(), this

@@ -6,9 +6,19 @@ namespace 'Exo', (exports) ->
     _.extend(@prototype, Backbone.Events) if Backbone?.Events
 
     @register: (name, klass) ->
-      $.fn[name] = (options = {}) ->
-        (new klass(element, options) for element in this)
-        return # No need to collect results
+      $.fn[name] = (params...) ->
+        for el in this
+          $el = $ el
+          api = $el.data name
+
+          if api
+            [action, args...] = params
+            api[action].apply(api, args) if api[action]?
+          else
+            options = params[0] || {}
+            $el.data(name, new klass($el, options))
+
+        this
 
     constructor: (el, options) ->
       @cid = _.uniqueId "exo-widget"

@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 ;;
 (function() {
 
-/*global cloneInheritVars, createInheritVars, createRegistryWrapper, getValue, inheritVars */
+/*global cloneInheritVars, createInheritVars, resetInheritVars, createRegistryWrapper, getValue, inheritVars */
 
 //support zepto.forEach on jQuery
 if (!$.fn.forEach) {
@@ -59,7 +59,7 @@ var Thorax = this.Thorax = {
     throw err;
   },
   //deprecated, here to ensure existing projects aren't mucked with
-  templates: Handlebars.templates 
+  templates: Handlebars.templates
 };
 
 Thorax.View = Backbone.View.extend({
@@ -456,19 +456,56 @@ function objectEvents(target, eventName, callback, context) {
   if (_.isObject(callback)) {
     var spec = inheritVars[eventName];
     if (spec && spec.event) {
-      addEvents(target['_' + eventName + 'Events'], callback, context);
+      if (target && target.listenTo && target[eventName] && target[eventName].cid) {
+        addEvents(target, callback, context, eventName);
+      } else {
+        addEvents(target['_' + eventName + 'Events'], callback, context);
+      }
       return true;
     }
   }
 }
-function addEvents(target, source, context) {
+// internal listenTo function will error on destroyed
+// race condition
+function listenTo(object, target, eventName, callback, context) {
+  // getEventCallback will resolve if it is a string or a method
+  // and return a method
+  var callbackMethod = getEventCallback(callback, object),
+      destroyedCount = 0;
+
+  function eventHandler() {
+    if (object.el) {
+      callbackMethod.apply(context, arguments);
+    } else {
+      // If our event handler is removed by destroy while another event is processing then we
+      // we might see one latent event percolate through due to caching in the event loop. If we
+      // see multiple events this is a concern and a sign that something was not cleaned properly.
+      if (destroyedCount) {
+        throw new Error('destroyed-event:' + object.name + ':' + eventName);
+      }
+      destroyedCount++;
+    }
+  }
+  eventHandler._callback = callbackMethod;
+  object.listenTo(target, eventName, eventHandler);
+}
+
+function addEvents(target, source, context, listenToObject) {
+  function addEvent(callback, eventName) {
+    if (listenToObject) {
+      listenTo(target, target[listenToObject], eventName, callback, context || target);
+    } else {
+      target.push([eventName, callback, context]);
+    }
+  }
+
   _.each(source, function(callback, eventName) {
     if (_.isArray(callback)) {
       _.each(callback, function(cb) {
-        target.push([eventName, cb, context]);
+        addEvent(cb, eventName);
       });
     } else {
-      target.push([eventName, callback, context]);
+      addEvent(callback, eventName);
     }
   });
 }
@@ -705,7 +742,7 @@ _.extend(Thorax.View.prototype, {
       //accept on("click a", callback, context)
       _.each((_.isArray(callback) ? callback : [callback]), function(callback) {
         var params = eventParamsFromEventItem.call(this, eventName, callback, context || this);
-        if (params.type === 'DOM') {
+        if (params.type === 'DOM' && !this.$el) {
           //will call _addEvent during delegateEvents()
           if (!this._eventsToDelegate) {
             this._eventsToDelegate = [];
@@ -765,7 +802,7 @@ Thorax.View.on('ready', function(options) {
   if (!this._isReady) {
     this._isReady = true;
     function triggerReadyOnChild(child) {
-      child.trigger('ready', options);
+      child._isReady || child.trigger('ready', options);
     }
     _.each(this.children, triggerReadyOnChild);
     this.on('child', triggerReadyOnChild);
@@ -1117,27 +1154,7 @@ _.extend(Thorax.View.prototype, {
 function bindEvents(type, target, source) {
   var context = this;
   walkInheritTree(source, '_' + type + 'Events', true, function(event) {
-    // getEventCallback will resolve if it is a string or a method
-    // and return a method
-    var callback = getEventCallback(event[1], context),
-        eventContext = event[2] || context,
-        destroyedCount = 0;
-
-    function eventHandler() {
-      if (context.el) {
-        callback.apply(eventContext, arguments);
-      } else {
-        // If our event handler is removed by destroy while another event is processing then we
-        // we might see one latent event percolate through due to caching in the event loop. If we
-        // see multiple events this is a concern and a sign that something was not cleaned properly.
-        if (destroyedCount) {
-          throw new Error('destroyed-event:' + context.name + ':' + event[0]);
-        }
-        destroyedCount++;
-      }
-    }
-    eventHandler._callback = callback;
-    context.listenTo(target, event[0], eventHandler);
+    listenTo(context, target, event[0], event[1], event[2] || context);
   });
 }
 
@@ -1830,6 +1847,7 @@ function resetSubmitState() {
 }
 
 ;;
+/*global getOptionsData, normalizeHTMLAttributeOptions*/
 var layoutCidAttributeName = 'data-layout-cid';
 
 Thorax.LayoutView = Thorax.View.extend({
@@ -1876,9 +1894,9 @@ Thorax.LayoutView = Thorax.View.extend({
     if (view) {
       triggerLifecycleEvent.call(this, 'activated', options);
       view.trigger('activated', options);
-      this._addChild(view);
       this._view = view;
       this._view.appendTo(getLayoutViewsTargetElement.call(this));
+      this._addChild(view);
     } else {
       this._view = undefined;
     }
@@ -1926,47 +1944,6 @@ function ensureLayoutViewsTargetElement() {
 
 function getLayoutViewsTargetElement() {
   return this.$('[' + layoutCidAttributeName + '="' + this.cid + '"]')[0] || this.el[0] || this.el;
-}
-
-;;
-/*global createRegistryWrapper */
-
-//Router
-function initializeRouter() {
-  Backbone.history || (Backbone.history = new Backbone.History());
-  Backbone.history.on('route', onRoute, this);
-  //router does not have a built in destroy event
-  //but ViewController does
-  this.on('destroyed', function() {
-    Backbone.history.off('route', onRoute, this);
-  });
-}
-
-Thorax.Router = Backbone.Router.extend({
-  constructor: function() {
-    var response = Thorax.Router.__super__.constructor.apply(this, arguments);
-    initializeRouter.call(this);
-    return response;
-  },
-  route: function(route, name, callback) {
-    if (!callback) {
-      callback = this[name];
-    }
-    //add a route:before event that is fired before the callback is called
-    return Backbone.Router.prototype.route.call(this, route, name, function() {
-      this.trigger.apply(this, ['route:before', route, name].concat(Array.prototype.slice.call(arguments)));
-      return callback.apply(this, arguments);
-    });
-  }
-});
-
-Thorax.Routers = {};
-createRegistryWrapper(Thorax.Router, Thorax.Routers);
-
-function onRoute(router /* , name */) {
-  if (this === router) {
-    this.trigger.apply(this, ['route'].concat(Array.prototype.slice.call(arguments, 1)));
-  }
 }
 
 ;;
@@ -2228,14 +2205,14 @@ Handlebars.registerHelper('link', function() {
 var clickSelector = '[' + callMethodAttributeName + '], [' + triggerEventAttributeName + ']';
 
 function handleClick(event) {
-  var target = $(event.target),
-      view = target.view({helper: false}),
-      methodName = target.attr(callMethodAttributeName),
-      eventName = target.attr(triggerEventAttributeName),
+  var $this = $(this),
+      view = $this.view({helper: false}),
+      methodName = $this.attr(callMethodAttributeName),
+      eventName = $this.attr(triggerEventAttributeName),
       methodResponse = false;
   methodName && (methodResponse = view[methodName].call(view, event));
   eventName && view.trigger(eventName, event);
-  target.tagName === "A" && methodResponse === false && event.preventDefault();
+  this.tagName === 'A' && methodResponse === false && event.preventDefault();
 }
 
 var lastClickHandlerEventName;
@@ -2689,10 +2666,6 @@ _.each(klasses, function(DataClass) {
 });
 
 Thorax.Util.bindToRoute = bindToRoute;
-
-if (Thorax.Router) {
-  Thorax.Router.bindToRoute = Thorax.Router.prototype.bindToRoute = bindToRoute;
-}
 
 // Propagates loading view parameters to the AJAX layer
 Thorax.View.prototype._modifyDataObjectOptions = function(dataObject, options) {

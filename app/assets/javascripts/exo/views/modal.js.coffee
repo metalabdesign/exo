@@ -128,8 +128,9 @@ namespace 'Exo.Views', (exports) ->
       @$el.addClass("with-footer") if @$footer.length
       @$el.addClass("with-sidebar") if @$sidebar.length
 
-      if @content
-        @$content.append(@content.el || @content)
+      if content = (@content?.el || @content)
+        content.style.display = "block"
+        @$content.append(content)
 
       return this
 

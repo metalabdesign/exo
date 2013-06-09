@@ -13,6 +13,7 @@ namespace 'Exo.Views', (exports) ->
     scrollable: true
     zIndex: 1024
     destroyOnHide: false
+    escToClose: true
 
     headerSelector:  "> .modal-header"
     sidebarSelect:   "> .modal-sidebar"
@@ -25,6 +26,8 @@ namespace 'Exo.Views', (exports) ->
       
       # @todo
       @dimensions ||= { width: null, height: null }
+
+      @keyboardManager = new Exo.KeyboardManager
 
     positionElement: ->
       headerHeight = @$header.outerHeight()
@@ -73,6 +76,12 @@ namespace 'Exo.Views', (exports) ->
 
       this
 
+    handleKeyUp: (key, e) ->
+      switch key
+        when "esc"
+          @hide() if @escToClose
+      false
+
     getOverlay: ->
       @_overlay ||= $("<div class='modal-overlay'></div>").css(zIndex: @zIndex - 1).appendTo(document.body)
 
@@ -92,6 +101,7 @@ namespace 'Exo.Views', (exports) ->
       @getOverlay().show() if @modal
       @$el.show()
       @positionElement()
+      @keyboardManager.nominate(this)
       @trigger "show"
 
     hide: (e) ->
@@ -137,6 +147,10 @@ namespace 'Exo.Views', (exports) ->
     remove: ->
       @_overlay?.remove()
       super
+
+    destroy: ->
+      super
+      @keyboardManager.revoke(this)
 
     # 
     # Private

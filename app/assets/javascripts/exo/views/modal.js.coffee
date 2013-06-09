@@ -4,6 +4,7 @@ namespace 'Exo.Views', (exports) ->
 
     className: "modal"
 
+    # @todo all of these
     width: null
     height: "auto"
     appendTo: document.body
@@ -18,9 +19,14 @@ namespace 'Exo.Views', (exports) ->
     contentSelector: "> .modal-content"
     footerSelector:  "> .modal-footer"
 
-    positionElement: ->
-      @dimensions ||= { width: null, height: null }
+    initialize: ->
+      # @param content [String] optional content to add to modal-content
+      @content = null
+      
+      # @todo
+      @dimensions = { width: null, height: null }
 
+    positionElement: ->
       headerHeight = @$header.outerHeight()
 
       setHeight = (height) =>
@@ -66,9 +72,6 @@ namespace 'Exo.Views', (exports) ->
       )
 
       this
-
-    _detectHeightForPositioning: ->
-      @$el.height()
 
     getOverlay: ->
       @_overlay ||= $("<div class='modal-overlay'></div>").css(zIndex: @zIndex - 1).appendTo(document.body)
@@ -133,4 +136,11 @@ namespace 'Exo.Views', (exports) ->
     remove: ->
       @_overlay?.remove()
       super
+
+    # 
+    # Private
+    #
+    
+    _detectHeightForPositioning: ->
+      @$el.height()
 

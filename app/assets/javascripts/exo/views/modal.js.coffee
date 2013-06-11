@@ -23,14 +23,14 @@ namespace 'Exo.Views', (exports) ->
     initialize: ->
       # @param content [String, Backbone.View] optional content to append to modal-content
       @content ||= null
-      
-      # @todo
-      @dimensions ||= { width: null, height: null }
 
       @keyboardManager = new Exo.KeyboardManager
 
     positionElement: ->
       headerHeight = @$header.outerHeight()
+
+      # @todo
+      @dimensions ||= { width: null, height: null }
 
       setHeight = (height) =>
         @dimensions.height = height
@@ -152,10 +152,10 @@ namespace 'Exo.Views', (exports) ->
       super
       @keyboardManager.revoke(this)
 
-    # 
+    #
     # Private
     #
-    
+
     _detectHeightForPositioning: ->
       @$el.height()
 

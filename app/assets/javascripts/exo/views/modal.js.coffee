@@ -4,6 +4,7 @@ namespace 'Exo.Views', (exports) ->
 
     className: "modal"
 
+    # @todo all of these
     width: null
     height: "auto"
     appendTo: document.body
@@ -12,15 +13,23 @@ namespace 'Exo.Views', (exports) ->
     scrollable: true
     zIndex: 1024
     destroyOnHide: false
+    escToClose: true
 
     headerSelector:  "> .modal-header"
     sidebarSelect:   "> .modal-sidebar"
     contentSelector: "> .modal-content"
     footerSelector:  "> .modal-footer"
 
-    positionElement: ->
+    initialize: ->
+      # @param content [String, Backbone.View] optional content to append to modal-content
+      @content ||= null
+      
+      # @todo
       @dimensions ||= { width: null, height: null }
 
+      @keyboardManager ||= new Exo.KeyboardManager(self)
+
+    positionElement: ->
       headerHeight = @$header.outerHeight()
 
       setHeight = (height) =>
@@ -67,8 +76,11 @@ namespace 'Exo.Views', (exports) ->
 
       this
 
-    _detectHeightForPositioning: ->
-      @$el.height()
+    handleKeyUp: (key, e) ->
+      switch key
+        when "esc"
+          @hide() if @escToClose
+      false
 
     getOverlay: ->
       @_overlay ||= $("<div class='modal-overlay'></div>").css(zIndex: @zIndex - 1).appendTo(document.body)
@@ -89,6 +101,7 @@ namespace 'Exo.Views', (exports) ->
       @getOverlay().show() if @modal
       @$el.show()
       @positionElement()
+      @keyboardManager.nominate(this)
       @trigger "show"
 
     hide: (e) ->
@@ -125,12 +138,24 @@ namespace 'Exo.Views', (exports) ->
       @$el.addClass("with-footer") if @$footer.length
       @$el.addClass("with-sidebar") if @$sidebar.length
 
-      if @content
-        @$content.append(@content.el || @content)
+      if content = (@content?.el || @content)
+        content.style.display = "block"
+        @$content.append(content)
 
       return this
 
     remove: ->
       @_overlay?.remove()
       super
+
+    destroy: ->
+      super
+      @keyboardManager.revoke(this)
+
+    # 
+    # Private
+    #
+    
+    _detectHeightForPositioning: ->
+      @$el.height()
 

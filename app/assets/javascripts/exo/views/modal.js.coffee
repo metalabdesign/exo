@@ -27,7 +27,7 @@ namespace 'Exo.Views', (exports) ->
       # @todo
       @dimensions ||= { width: null, height: null }
 
-      @keyboardManager ||= new Exo.KeyboardManager(self)
+      @keyboardManager ||= new Exo.KeyboardManager(@el)
 
     positionElement: ->
       headerHeight = @$header.outerHeight()

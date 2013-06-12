@@ -28,7 +28,7 @@ namespace 'Exo.Views', (exports) ->
       @tokens.comparator = null
       @properties = []
       @tokens.on("all", @_tokensChanged, this)
-      @keyboardManager = new Exo.KeyboardManager
+      @keyboardManager ||= new Exo.KeyboardManager(@el)
 
     render: ->
       # In case this is a re-render, remove the token-input

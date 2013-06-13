@@ -2,7 +2,6 @@ callback = ->
   @initializeSelection()
 
 Exo.View.registerMixin("selectable", callback, {
-
   selectableClass: 'selected'
   selectableDeselectOnClick: false
 
@@ -80,6 +79,12 @@ Exo.View.registerMixin("selectable", callback, {
       @lastSelected = all.eq(i)
       @select @lastSelected
 
+  selectPrevious: (e) ->
+    @selectInDirection -1, e
+
+  selectNext: (e) ->
+    @selectInDirection 1, e
+
   selectAll: -> @select @getItemsForSelection()
 
   deselectAll: -> @deselect @getItemsForSelection()
@@ -93,25 +98,15 @@ Exo.View.registerMixin("selectable", callback, {
   getSelectedElements: -> @$("#{@selectableSelector}.#{@selectableClass}")
 
   getSelectedModels: ->
-    _this = this
-    @getSelectedElements().map () ->
-      _this.collection.getByCid this.getAttribute("data-model-cid")
+    @getSelectedElements().map (i, el) =>
+      @collection.get el.getAttribute("data-model-cid")
 
   getItemsForSelection: ->
     # TODO caching
     @$(@selectableSelector)
 
   selectByModel: (model) ->
-    return if not model = @collection.get model
+    return unless model = @collection.get model
     @select $(model.el)
     this
-
-  handleKey: (key, e) ->
-    switch key
-      when 'up', '⇧+up'
-        @selectInDirection -1, e
-        e.preventDefault()
-      when 'down', '⇧+down'
-        @selectInDirection 1, e
-        e.preventDefault()
 })

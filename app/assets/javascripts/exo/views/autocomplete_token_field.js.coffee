@@ -3,7 +3,7 @@
 namespace 'Exo.Views', (exports) ->
   class exports.AutocompleteTokenField extends Exo.Views.TokenField
     resultsPopoverClass: Exo.Views.CollectionListPopover
-    showPopoverOnEmpty: true
+    showPopoverOnEmpty: false
     minInputValueLength: 1
     allowNewTokens: true
 
@@ -36,8 +36,6 @@ namespace 'Exo.Views', (exports) ->
 
     handleKeyDown: (key, e) ->
       switch key
-        when "backspace"
-          @_hideResultsPopover()
         when "enter"
           e.preventDefault()
           @_hideResultsPopover()
@@ -45,8 +43,6 @@ namespace 'Exo.Views', (exports) ->
 
     handleKeyUp: (key, e) ->
       switch key
-        when "backspace"
-          @_hideResultsPopover()
         when "down"
           @_showResultsPopover() unless @resultsPopover.visible
         when "up", "down"
@@ -90,6 +86,7 @@ namespace 'Exo.Views', (exports) ->
     _showResultsPopover: _.debounce((query) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
       resultsCollection.remove(@tokens.array)
+
       resultsCollection.add({name: query})
 
       @resultsPopover.setCollection(resultsCollection)

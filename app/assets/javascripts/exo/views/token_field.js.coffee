@@ -2,10 +2,10 @@ namespace 'Exo.Views', (exports) ->
   class exports.TokenField extends Exo.View
     tagName: "div"
     className: "token-field"
+    tokenClassName: "token-field-token"
     maxTokens: Infinity
     placeholder: ""
     minInputValueLength: 2
-    itemTemplate: "token_field_token"
 
     @TokenIndexes:
       All: -3
@@ -24,7 +24,7 @@ namespace 'Exo.Views', (exports) ->
     initialize: (options = {}) ->
       super
       @selectedIndex = TokenField.TokenIndexes.Input
-      @tokens = new Exo.ArrayController()
+      @tokens = new Exo.ArrayController
       @tokens.comparator = null
       @properties = []
       @tokens.on("all", @_tokensChanged, this)
@@ -72,15 +72,13 @@ namespace 'Exo.Views', (exports) ->
 
       this
 
-    insertToken: (strings, disableDelete = false) ->
-      return if @maxTokensExceeded()
-
-      strings = if _.isArray(strings) then strings.slice() else [strings]
+    insertToken: (tokens, disableDelete = false) ->
+      tokens = if _.isArray(tokens) then tokens.slice() else [tokens]
 
       @render() if !@tokenInput
 
-      for string in strings
-        token = @_buildToken(string, disableDelete)
+      for token in tokens
+        token = @_buildToken(token, disableDelete)
 
         unless @tokens.include(token.object)
           @tokenContainer.insertBefore(token.properties.node, @tokenInput)
@@ -92,6 +90,18 @@ namespace 'Exo.Views', (exports) ->
       @_updateInput()
       @_toggleInputVisibility()
 
+    tokenize: (items, disableDelete = false) ->
+      return unless @_queryMeetsMinLength()
+
+      @$input?.val("")
+      @input?.focus()
+
+      # Replace existing token if only one token is allowed
+      @deleteTokenAtIndex(0) if @maxTokens == 1 && @maxTokensExceeded()
+
+      if !@maxTokensExceeded()
+        @insertToken(items, disableDelete)
+
     removeToken: (tokens, options) ->
       tokens = if _.isArray(tokens) then tokens.slice() else [tokens]
 
@@ -99,16 +109,6 @@ namespace 'Exo.Views', (exports) ->
         index = @tokens.array.indexOf token
         if index != -1
           @deleteTokenAtIndex index, true
-
-    tokenize: (string) ->
-      @insertToken(string)
-      @input.value = ""
-
-      if item == @input.value.slice(0, -1)
-        item = @input.value
-
-      if @maxTokens == 1 && @maxTokensExceeded()
-        @deleteTokenAtIndex 0
 
     selectPreviousToken: ->
       if @selectedIndex == 0
@@ -209,62 +209,15 @@ namespace 'Exo.Views', (exports) ->
         @selectTokenAtIndex(0)
       @_focusInput()
       @$el.addClass("focus")
+
       @trigger("focus", e)
       @keyboardManager.nominate this
 
-    isFocused: ->
-      @$el.hasClass("focus")
-
-    maxTokensExceeded: ->
-      @tokens.length >= @maxTokens
-
-    destroy: ->
-      @keyboardManager.revoke this
-      @tokens.off(null, null, this)
-      super
-
+    # Returns array of tags (strings or Backbone.models)
     #
-    # Private
-    #
-
-    _focusInput: ->
-      @input.focus()
-
-    _getNodeIndex: (target) ->
-      for item, index in @properties
-        if item.node == target
-          return index
-      return -1
-
-    # Events
-
-    _clickToken: (e) ->
-      e.stopPropagation()
-      target = e.currentTarget
-
-      if ((index = @_getNodeIndex(target)) >= 0)
-        @selectTokenAtIndex(index)
-
-      @_focusInput()
-
-    _clickTokenDelete: (e) ->
-      e.stopPropagation()
-      target = $(e.currentTarget).closest("li")[0]
-      return if (index = @_getNodeIndex(target)) < 0
-
-      @deleteTokenAtIndex(index, true)
-
-      if @tokens.length == 0
-        @selectedIndex = TokenField.TokenIndexes.Input
-        @selectTokenAtIndex(TokenField.TokenIndexes.Input)
-        @$input.focus()
-        return
-
-      if index <= @selectedIndex
-        @selectedIndex = Math.max(index - 1, 0)
-        @selectTokenAtIndex(@selectedIndex)
-
-      return
+    # @return [Array<String,Backbone.Model>] tags
+    serialize: ->
+      @tokens.array
 
     handleKeyUp: (key, e) ->
       @_updateInput(e)
@@ -297,8 +250,9 @@ namespace 'Exo.Views', (exports) ->
         when "enter"
           if !@input.value.length && @selectedIndex == TokenField.TokenIndexes.Input
             return true
-          else if @input.value.length >= @minInputValueLength
+          else
             @tokenize(@input.value)
+
           e.preventDefault()
           e.stopPropagation()
           return false
@@ -312,6 +266,63 @@ namespace 'Exo.Views', (exports) ->
 
       @_updateInput(e)
       undefined
+
+    isFocused: ->
+      @$el.hasClass("focus")
+
+    maxTokensExceeded: ->
+      @tokens.length >= @maxTokens
+
+    destroy: ->
+      @keyboardManager.revoke this
+      @tokens.off(null, null, this)
+      super
+
+    #
+    # Private
+    #
+
+    _focusInput: ->
+      @input.focus()
+
+    _getNodeIndex: (target) ->
+      for item, index in @properties
+        if item.node == target
+          return index
+      return -1
+
+    _queryMeetsMinLength: (query = @input.value) ->
+      query.trim().length >= @minInputValueLength
+
+    # Events
+
+    _clickToken: (e) ->
+      e.stopPropagation()
+      target = e.currentTarget
+
+      if ((index = @_getNodeIndex(target)) >= 0)
+        @selectTokenAtIndex(index)
+
+      @_focusInput()
+
+    _clickTokenDelete: (e) ->
+      e.stopPropagation()
+      target = $(e.currentTarget).closest("li")[0]
+      return if (index = @_getNodeIndex(target)) < 0
+
+      @deleteTokenAtIndex(index, true)
+
+      if @tokens.length == 0
+        @selectedIndex = TokenField.TokenIndexes.Input
+        @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+        @$input.focus()
+        return
+
+      if index <= @selectedIndex
+        @selectedIndex = Math.max(index - 1, 0)
+        @selectTokenAtIndex(@selectedIndex)
+
+      return
 
     _updateInput: (e) ->
       return unless @input
@@ -346,7 +357,8 @@ namespace 'Exo.Views', (exports) ->
 
     _buildToken: (object, disableDelete) ->
       node = document.createElement("li")
-      node.innerHTML = object
+
+      node.innerHTML = @_itemDisplayText(object)
       node.className = "token-field-token"
 
       properties = {node : node, disableDelete: disableDelete}
@@ -357,3 +369,12 @@ namespace 'Exo.Views', (exports) ->
 
     _tokensChanged: (token) ->
       @_setPlaceholder() if @inputPlaceholder
+
+    _itemDisplayText: (object) ->
+      if object instanceof Backbone.Model
+        displayText = object.get(object.searchKey)
+        (-> displayText ||= object.get(attr))() for attr in ["name", "title", "full_name", "email"]
+        displayText
+      else
+        object
+

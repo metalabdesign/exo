@@ -6,6 +6,7 @@ namespace 'Exo', (exports) ->
       @results.comparator = null
       @sources = []
       @threshold = options.threshold
+      @modelFilterAttr = options.filterAttribute || "name"
 
     resultsForString: (query) ->
       results = []
@@ -18,8 +19,7 @@ namespace 'Exo', (exports) ->
           # Score models in sources against a passed in query if there is one,
           # otherwise return all models
           if query
-            throw "No search key defined on #{model}" unless model.searchKey
-            score = @_scoreForQuery(model.get(model.searchKey), query)
+            score = @_scoreForQuery(model.get(@modelFilterAttr), query)
 
             if score > @threshold
               results.push {

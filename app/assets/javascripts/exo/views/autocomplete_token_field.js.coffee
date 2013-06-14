@@ -6,6 +6,7 @@ namespace 'Exo.Views', (exports) ->
     showPopoverOnEmpty: false
     minInputValueLength: 1
     allowNewTokens: true
+    showAllOnDownArrow: false
 
     initialize: (options = {}) ->
       super
@@ -14,6 +15,7 @@ namespace 'Exo.Views', (exports) ->
         appendTo: @$el
         target: @$el
         tail: false
+        setupEvents: false
         keyboardManager: @keyboardManager
         position: {
           my: "left top"
@@ -21,6 +23,9 @@ namespace 'Exo.Views', (exports) ->
           collision: "none"
         }
       )
+
+      # Attribute to filter models by
+      @filterAttribute = options.filterAttribute || "name"
 
       @resultsPopover.on("item:selected", @tokenize, this)
 
@@ -34,22 +39,14 @@ namespace 'Exo.Views', (exports) ->
       if @allowNewTokens || @collection.get(token)
         super(token)
 
-    handleKeyDown: (key, e) ->
-      switch key
-        when "enter"
-          e.preventDefault()
-          @_hideResultsPopover()
-      super
-
     handleKeyUp: (key, e) ->
       switch key
         when "down"
-          @_showResultsPopover() unless @resultsPopover.visible
+          if @showAllOnDownArrow && @input.value == "" && !@resultsPopover.visible
+            @_showResultsPopover()
         when "up", "down"
           # Prevent re-rendering when navigating auto-completer
           return false
-        when "enter"
-          e.preventDefault()
         else
           @_queryEntered(@input.value)
       super
@@ -68,11 +65,11 @@ namespace 'Exo.Views', (exports) ->
       @_hideResultsPopover()
 
     _shouldShowResultsPopover: (query) ->
-      if @maxTokensExceeded()
+      if @_maxTokensExceeded()
         false
       else if @_queryMeetsMinLength(query)
         true
-      else if @showPopoverOnEmpty && @input.value == ""
+      else if @showAllOnDownArrow && @input.value == ""
         true
       else
         false
@@ -87,7 +84,7 @@ namespace 'Exo.Views', (exports) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
       resultsCollection.remove(@tokens.array)
 
-      resultsCollection.add({name: query})
+      resultsCollection.add({name: query}) if @allowNewTokens
 
       @resultsPopover.setCollection(resultsCollection)
       @resultsPopover.show()

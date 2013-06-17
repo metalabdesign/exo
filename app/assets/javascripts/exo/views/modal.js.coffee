@@ -8,12 +8,15 @@ namespace 'Exo.Views', (exports) ->
     width: null
     height: "auto"
     appendTo: document.body
+    appendOverlayTo: document.body
     modal: true
     visible: false
     scrollable: true
     zIndex: 1024
     destroyOnHide: false
     escToClose: true
+
+    topOffset:  "80px"
 
     headerSelector:  "> .modal-header"
     sidebarSelect:   "> .modal-sidebar"
@@ -30,46 +33,11 @@ namespace 'Exo.Views', (exports) ->
       @keyboardManager ||= new Exo.KeyboardManager(@el)
 
     positionElement: ->
-      headerHeight = @$header.outerHeight()
-
-      setHeight = (height) =>
-        @dimensions.height = height
-        @$el.height height
-
-        @$content.css(position: "absolute")
-        @$footer.css(position: "absolute")
-
-        @$content.add(@$sidebar).css
-          top: headerHeight
-          bottom: @$footer.outerHeight()
-
-      if @height == "auto"
-        @$el.css(height: "auto")
-        @$content.css(position: "relative", top: 0)
-        @$footer.css(position: "static")
-
-        elHeight = @_detectHeightForPositioning()
-        maxHeight = window.innerHeight - 160
-
-        contentHeight = @$content.height()
-        if (contentHeight + @$footer.height() + headerHeight) >= maxHeight
-          setHeight maxHeight
-        else if @$sidebar.length || contentHeight == 0
-          setHeight elHeight
-
-      else
-        setHeight @height
-
-      if @width == "auto"
-        @$el.css(width: "auto")
-        @$content.css(position: "relative")
-        @dimensions.width = @$el.width()
-      else if @width
-        @dimensions.width = @width
-        @$el.width @width
+      @_setHeight()
+      @_setWidth()
 
       @$el.css(
-        top: "80px"
+        top: @topOffset
         left: "50%"
         marginLeft: "-#{ @dimensions.width / 2 }px"
       )
@@ -83,7 +51,7 @@ namespace 'Exo.Views', (exports) ->
       false
 
     getOverlay: ->
-      @_overlay ||= $("<div class='modal-overlay'></div>").css(zIndex: @zIndex - 1).appendTo(document.body)
+      @_overlay ||= $("<div class='modal-overlay'></div>").css(zIndex: @zIndex - 1).appendTo(@appendOverlayTo)
 
     scrollTo: (pos) ->
       # TODO support elements, += values, etc.
@@ -159,3 +127,45 @@ namespace 'Exo.Views', (exports) ->
     _detectHeightForPositioning: ->
       @$el.height()
 
+    _setHeight: ->
+      headerHeight = @$header.outerHeight()
+      footerHeight = @$footer.outerHeight()
+
+      setHeight = (height) =>
+        @dimensions.height = height
+        @$el.height height
+
+        @$content.css(position: "absolute")
+        @$footer.css(position: "absolute")
+
+        @$content.add(@$sidebar).css
+          top: headerHeight
+          bottom: footerHeight
+
+      if @height == "auto"
+        @$el.css(height: "auto")
+        @$content.css(position: "relative", top: 0)
+        @$footer.css(position: "static")
+
+        elHeight = @_detectHeightForPositioning()
+        # TODO magic number
+        maxHeight = window.innerHeight - 160
+
+        contentHeight = @$content.height()
+
+        if (contentHeight + @$footer.height() + headerHeight) >= maxHeight
+          setHeight maxHeight
+        else if @$sidebar.length || contentHeight == 0
+          setHeight elHeight
+
+      else
+        setHeight @height
+
+    _setWidth: ->
+      if @width == "auto"
+        @$el.css(width: "auto")
+        @$content.css(position: "relative")
+        @dimensions.width = @$el.width()
+      else if @width
+        @dimensions.width = @width
+        @$el.width @width

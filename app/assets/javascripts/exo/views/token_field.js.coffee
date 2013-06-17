@@ -1,11 +1,22 @@
 namespace 'Exo.Views', (exports) ->
   class exports.TokenField extends Exo.View
     tagName: "div"
-    className: "token-field"
-    tokenClassName: "token-field-token"
     maxTokens: Infinity
     placeholder: ""
     minInputValueLength: 2
+
+    className: "token-field"
+    selectedClassName: "selected"
+    focusClassName: "focus"
+    hasInputClassName: "has-input"
+    inputClassName: "token-input"
+    hiddenClass: "hidden"
+    inputPlaceholderClassName: "input-placeholder"
+    inputExpanderClassName: "input-expander"
+    tokenSelectedClassName: "selected"
+    tokenContainerClassName: "token-container"
+    tokenClassName: "token-field-token"
+    exceededLimitClassName: "exceeded-limit"
 
     @TokenIndexes:
       All: -3
@@ -46,7 +57,7 @@ namespace 'Exo.Views', (exports) ->
       $(@tokenInput).remove() if @tokenInput
 
       @tokenInput = document.createElement("li")
-      @tokenInput.className = "token-input"
+      @tokenInput.className = @inputClassName
 
       @input = document.createElement("input")
       @input.setAttribute("autocorrect", "off")
@@ -55,12 +66,12 @@ namespace 'Exo.Views', (exports) ->
       @input.setAttribute("tabindex", "0")
 
       @inputPlaceholder = document.createElement("span")
-      @inputPlaceholder.className = "input-placeholder"
+      @inputPlaceholder.className = @inputPlaceholderClassName
 
       # Text from @input is copied to this span to allow the
       # parent element to auto expand (native inputs don't support this)
       @inputExpander = document.createElement("span")
-      @inputExpander.className = "input-expander"
+      @inputExpander.className = @inputExpanderClassName
 
       @_setPlaceholder()
 
@@ -77,7 +88,7 @@ namespace 'Exo.Views', (exports) ->
         @el.appendChild(property.node)
 
       @tokenContainer = document.createElement("ul")
-      @tokenContainer.className = "token-container"
+      @tokenContainer.className = @tokenContainerClassName
       @tokenContainer.appendChild(@tokenInput)
 
       @el.appendChild(@tokenContainer)
@@ -146,23 +157,23 @@ namespace 'Exo.Views', (exports) ->
       
       # TODO holy shit.. refactor this...
       if @selectedIndex != TokenField.TokenIndexes.Input && @selectedIndex != TokenField.TokenIndexes.All
-        $(@properties[@selectedIndex].node).removeClass("selected")
+        $(@properties[@selectedIndex].node).removeClass(@tokenSelectedClassName)
 
       if index == TokenField.TokenIndexes.Input
         @selectedIndex = TokenField.TokenIndexes.Input
-        @$el.removeClass("selected-token")
+        @$el.removeClass(@selectedClassName)
         return
 
       if index == TokenField.TokenIndexes.All
         @selectedIndex = TokenField.TokenIndexes.All
-        @$el.find(".token-field-token").addClass("selected")
-        @$el.addClass("selected-token") if @input && @input.value.length == 0
+        @$el.find(".#{@tokenClassName}").addClass(@tokenSelectedClassName)
+        @$el.addClass(@selectedClassName) if @input && @input.value.length == 0
         return
 
       if 0 <= index < @tokens.length
         @selectedIndex = index
-        @$el.addClass("selected-token") if @input && @input.value.length == 0
-        $(@properties[@selectedIndex].node).addClass("selected")
+        @$el.addClass(@selectedClassName) if @input && @input.value.length == 0
+        $(@properties[@selectedIndex].node).addClass(@tokenSelectedClassName)
 
     selectTokenForObject: (object) ->
       for token, index in @tokens.array
@@ -202,13 +213,13 @@ namespace 'Exo.Views', (exports) ->
       @_toggleInputVisibility()
 
     deselectAll: ->
-      @$el.find(".selected").removeClass("selected")
+      @$el.find(@tokenSelectedClassName).removeClass(@tokenSelectedClassName)
 
     selectAll: ->
       @selectTokenAtIndex(TokenField.TokenIndexes.All)
 
     focus: (e) ->
-      @$el.addClass("focus")
+      @$el.addClass(@focusClassName)
 
       @trigger("focus_LOL_THORAX_BUG", e)
       @keyboardManager.nominate this
@@ -226,12 +237,12 @@ namespace 'Exo.Views', (exports) ->
     handleKeyDown: (key, e) ->
       switch key
         when "backspace"
-          if @selectedIndex != TokenField.TokenIndexes.Input
+          if @selectedIndex == TokenField.TokenIndexes.All
+            @deleteAll()
+          else if @selectedIndex != TokenField.TokenIndexes.Input
             @deleteTokenAtIndex(@selectedIndex)
-            e.preventDefault()
           else if @input.selectionStart == 0 && @input.selectionEnd == 0
             @selectTokenAtIndex(@tokens.length - 1)
-            e.preventDefault()
         when "left"
           if @input.selectionStart == 0 || @selectedIndex != TokenField.TokenIndexes.Input
             e.preventDefault()
@@ -267,7 +278,7 @@ namespace 'Exo.Views', (exports) ->
       undefined
 
     isFocused: ->
-      @$el.hasClass("focus")
+      @$el.hasClass(@focusClassName)
 
     destroy: ->
       @keyboardManager.revoke this
@@ -323,12 +334,12 @@ namespace 'Exo.Views', (exports) ->
     _updateInput: (e) ->
       return unless @input
       @inputExpander.textContent = @input.value || ""
-      @$el.toggleClass("has-input", (@input.value.length > 0))
+      @$el.toggleClass(@hasInputClassName, (@input.value.length > 0))
 
     _blur: (e) ->
       @keyboardManager.revoke this
 
-      @$el.removeClass("focus")
+      @$el.removeClass(@focusClassName)
       @_updateInput(e)
       @selectTokenAtIndex(TokenField.TokenIndexes.Input)
       @trigger("blur_LOL_THORAX_BUG", e)
@@ -347,14 +358,14 @@ namespace 'Exo.Views', (exports) ->
 
     _toggleInputVisibility: ->
       exceeded = @_maxTokensExceeded()
-      $(@input).toggleClass("hidden", exceeded)
-      @$el.toggleClass("exceeded-limit", exceeded)
+      $(@input).toggleClass(@hiddenClass, exceeded)
+      @$el.toggleClass(@exceededLimitClassName, exceeded)
 
     _buildToken: (object) ->
       node = document.createElement("li")
 
       node.innerHTML = @_itemDisplayText(object)
-      node.className = "token-field-token"
+      node.className = @tokenClassName
 
       # WTF lol refactor...
       properties = {node : node}
@@ -365,10 +376,5 @@ namespace 'Exo.Views', (exports) ->
     _tokensChanged: (token) ->
       @_setPlaceholder() if @inputPlaceholder
 
-    _itemDisplayText: (object) ->
-      if object instanceof Backbone.Model
-        displayText = object.get(@modelFilterAttr)
-        (-> displayText ||= object.get(attr))() for attr in ["name", "title", "full_name", "email"]
-        displayText
-      else
-        object
+    _itemDisplayText: (item) ->
+      item

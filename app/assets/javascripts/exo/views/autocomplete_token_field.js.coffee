@@ -93,3 +93,11 @@ namespace 'Exo.Views', (exports) ->
     _hideResultsPopover: ->
       @resultsPopover.collection?.reset()
       @resultsPopover.hide()
+
+    _itemDisplayText: (item) ->
+      if item instanceof Backbone.Model
+        displayText = item.get(@modelFilterAttr)
+        (-> displayText ||= item.get(attr))() for attr in ["name", "title", "full_name", "email"]
+        displayText
+      else
+        super

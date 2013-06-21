@@ -66,6 +66,8 @@
     vertical-align: middle
     background: no-repeat center center
     +image-background($path)
+    &
+      @content
 
 @mixin set-tap-highlight()
   -webkit-tap-highlight-color: rgba(90,90,90, 0.5)

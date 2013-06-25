@@ -4,6 +4,7 @@ namespace 'Exo.Views', (exports) ->
     hidden: false
     autoRender: true
     headerFormat: "MMMM YYYY"
+    dateFormat: "MM/DD/YYYY"
     firstDayOfWeek: 1
     linkTemplate: null
 
@@ -13,15 +14,15 @@ namespace 'Exo.Views', (exports) ->
       collision: 'fit'
 
     events:
-      "mousedown .datepicker-prev": (e) ->
+      "mouseup .datepicker-prev": (e) ->
         e.preventDefault()
         @prev()
 
-      "mousedown .datepicker-next": (e) ->
+      "mouseup .datepicker-next": (e) ->
         e.preventDefault()
         @next()
 
-      "mousedown .day": (e) ->
+      "mouseup .day": (e) ->
         e.preventDefault()
         @select(e.target.getAttribute("data-datestamp"))
 
@@ -55,13 +56,14 @@ namespace 'Exo.Views', (exports) ->
 
       @monthHeader = $('<div class="datepicker-title">' + @now.format(@headerFormat) + '</div>')
 
-      dayLabels = _.map(Locale.get('Date.days_abbr'), (str) -> '<span>' + str.substr(0, 1) + '</span>')
+      dayLabels = _.map(["Sun", "Mon", "Tue", "Wed", "Thurs", "Fri", "Sat"], (str) -> '<span>' + str.substr(0, 1) + '</span>')
       dayLabels = dayLabels.concat(dayLabels.splice(0, @firstDayOfWeek))
-
-      $(document.createElement("div")).addClass('datepicker-header-inner').append(prevBtn)
+      $(document.createElement("div"))
+            .addClass('datepicker-header-inner')
+            .append(prevBtn)
             .append(this.monthHeader)
             .append(nextBtn)
-            .append('<div class="datepicker-daysofweek">'+ dayLabels.join('') +'</div>')
+            .append('<div class="datepicker-daysofweek">' + dayLabels.join('') + '</div>')
             .appendTo(@$header)
 
       @$header
@@ -80,12 +82,12 @@ namespace 'Exo.Views', (exports) ->
       @range[0] = moment(d)
       @$body.empty()
 
-      for j in [0..6]
-        for i in [0..7]
+      for j in [0..5]
+        for i in [0..6]
           classes = ['day']
 
           classes.push('first') if i == 0
-          classes.push('last')  if i ==6
+          classes.push('last')  if i == 6
 
           if @now.month() != d.month()
             classes.push('not-in-month')
@@ -94,11 +96,11 @@ namespace 'Exo.Views', (exports) ->
             classes.push('today')
 
            E = $(document.createElement('a')).attr({
-            'data-datestamp': d.format('YYYY-MM-DD'),
+            'data-datestamp': d.format(@dateFormat),
             'class': classes.join(' ')
           }).html(d.date())
 
-          dE.appendTo(@$body)
+          E.appendTo(@$body)
           d.add('days', 1)
 
       @range[1] = d.clone()
@@ -134,12 +136,12 @@ namespace 'Exo.Views', (exports) ->
 
       options = _.extend({ silent: false, toggle: true }, options)
 
-      if date.format('YYYY-MM-DD') != @now.format('YYYY-MM-DD')
+      if date.format(@dateFormat) != @now.format(@dateFormat)
         @showDate(date)
 
       @clear() if(options.toggle)
 
-      elem = @$body.find('[data-datestamp="'+ date.format('YYYY-MM-DD') +'"]').addClass('highlight')
+      elem = @$body.find('[data-datestamp="' + date.format(@dateFormat) + '"]').addClass('highlight')
 
       if !options.silent
         @trigger('select', date, elem)

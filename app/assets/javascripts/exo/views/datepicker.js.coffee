@@ -14,15 +14,15 @@ namespace 'Exo.Views', (exports) ->
       collision: 'fit'
 
     events:
-      "mouseup .datepicker-prev": (e) ->
+      "mousedown .datepicker-prev": (e) ->
         e.preventDefault()
         @prev()
 
-      "mouseup .datepicker-next": (e) ->
+      "mousedown .datepicker-next": (e) ->
         e.preventDefault()
         @next()
 
-      "mouseup .day": (e) ->
+      "mousedown .day": (e) ->
         e.preventDefault()
         @select(e.target.getAttribute("data-datestamp"))
 
@@ -30,7 +30,7 @@ namespace 'Exo.Views', (exports) ->
       @range = []
       @el.id = @id = 'dp-' + new Date().getTime()
 
-      if @hidden then @$el.hide() else this.$el.show()
+      if @hidden then @$el.hide() else @$el.show()
 
       @now = moment()
       @visible = false
@@ -61,7 +61,7 @@ namespace 'Exo.Views', (exports) ->
       $(document.createElement("div"))
             .addClass('datepicker-header-inner')
             .append(prevBtn)
-            .append(this.monthHeader)
+            .append(@monthHeader)
             .append(nextBtn)
             .append('<div class="datepicker-daysofweek">' + dayLabels.join('') + '</div>')
             .appendTo(@$header)
@@ -114,22 +114,22 @@ namespace 'Exo.Views', (exports) ->
       @renderBody()
 
     prev: ->
-      this.now.subtract('month', 1)
-      this.showDate()
+      @now.subtract('months', 1)
+      @showDate()
 
     next: ->
-      this.now.add('month', 1)
-      this.showDate()
+      @now.add('months', 1)
+      @showDate()
 
     show: ->
-      this.visible = true
-      this.$el.show().position(@position)
-      this.trigger('show')
+      @visible = true
+      @$el.show().position(@position)
+      @trigger('show')
 
     hide: ->
-      this.visible = false
-      this.$el.hide()
-      this.trigger('hide')
+      @visible = false
+      @$el.hide()
+      @trigger('hide')
 
     select: (date, options) ->
       date = moment(date) if _.isString(date)
@@ -151,7 +151,7 @@ namespace 'Exo.Views', (exports) ->
     selectRange: (date1, date2, options) ->
       options = _.extend({ silent: false, toggle: true }, options)
 
-      this.clear() if options.toggle
+      @clear() if options.toggle
 
       if(date1 == date2)
         @select(date1, options)
@@ -167,3 +167,4 @@ namespace 'Exo.Views', (exports) ->
     clear: ->
       @trigger('clear')
       @$body.children().removeClass('highlight')
+

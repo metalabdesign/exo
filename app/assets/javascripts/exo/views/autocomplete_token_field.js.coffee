@@ -27,7 +27,14 @@ namespace 'Exo.Views', (exports) ->
       # Attribute to filter models by
       @filterAttribute = options.filterAttribute || "name"
 
-      @resultsPopover.on("item:selected", @tokenize, this)
+      @resultsPopover.on "item:selected", (model) ->
+        # If the model is a placeholder then tokenize just its name so that a new item is created
+        # instead of using an existing one
+        if model.get("_new")
+          @tokenize(model.get("name"))
+        else
+          @tokenize(model)
+      , this
 
       @matcher = new Exo.Matcher
 
@@ -84,7 +91,10 @@ namespace 'Exo.Views', (exports) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
       resultsCollection.remove(@tokens.array)
 
-      resultsCollection.add({name: query}) if @allowNewTokens
+      if @allowNewTokens
+        # Insert a placeholder token for the currently entered query which the user can select
+        # if they wish to create a new item rather than using an exsting one
+        resultsCollection.add({name: query, _new: true}) 
 
       @resultsPopover.setCollection(resultsCollection)
       @resultsPopover.show()
@@ -101,3 +111,4 @@ namespace 'Exo.Views', (exports) ->
         displayText
       else
         super
+

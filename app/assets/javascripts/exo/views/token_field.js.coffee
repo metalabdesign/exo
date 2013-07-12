@@ -131,6 +131,11 @@ namespace 'Exo.Views', (exports) ->
 
       @trigger("change_LOL_THORAX_BUG", @tokens.array)
 
+    # Clears any existing tokens and inserts passed in tokens
+    setToken: (tokens) ->
+      @deleteAll()
+      @insertToken(tokens)
+
     selectPreviousToken: ->
       if @selectedIndex == 0
         return

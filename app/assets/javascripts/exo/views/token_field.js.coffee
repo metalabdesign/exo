@@ -159,7 +159,7 @@ namespace 'Exo.Views', (exports) ->
 
     selectTokenAtIndex: (index) ->
       @deselectAll()
-      
+
       # TODO holy shit.. refactor this...
       if @selectedIndex != TokenField.TokenIndexes.Input && @selectedIndex != TokenField.TokenIndexes.All
         $(@properties[@selectedIndex].node).removeClass(@tokenSelectedClassName)
@@ -367,16 +367,18 @@ namespace 'Exo.Views', (exports) ->
       @$el.toggleClass(@exceededLimitClassName, exceeded)
 
     _buildToken: (object) ->
+      # WTF lol refactor...
+      properties = {node : @_buildTokenNode(object)}
+      token = {object: object, properties: properties}
+
+      token
+
+    _buildTokenNode: (object) ->
       node = document.createElement("li")
 
       node.innerHTML = @_itemDisplayText(object)
       node.className = @tokenClassName
-
-      # WTF lol refactor...
-      properties = {node : node}
-      token = {object: object, properties: properties}
-
-      return token
+      node
 
     _tokensChanged: (token) ->
       @_setPlaceholder() if @inputPlaceholder

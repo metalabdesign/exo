@@ -1,4 +1,8 @@
 namespace 'Exo', (exports) ->
+  Array::indexOf ||= (item) ->
+    return i for x, i in this when x is item
+    -1
+
   class exports.KeyboardManager
 
     _map = {

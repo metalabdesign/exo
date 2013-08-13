@@ -13,8 +13,8 @@ namespace 'Exo.Views', (exports) ->
     className: "collection-list-popover popover"
 
     initialize: ->
-      super
       @keyboardManager ||= new Exo.KeyboardManager
+      super
 
     handleKeyDown: (key, e) ->
       switch key
@@ -42,6 +42,7 @@ namespace 'Exo.Views', (exports) ->
     _itemClicked: (e) ->
       cid = $(e.currentTarget).closest("li")[0].getAttribute("data-model-cid")
       @_modelSelected(@collection.get(cid))
+      @hide()
 
     _nominateKeyboardManager: ->
       @keyboardManager.nominate this

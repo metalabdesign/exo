@@ -34,24 +34,25 @@ Exo.View.registerMixin("selectable", callback, {
         else
           @deselectOthers(elem, false)
           if @selectableDeselectOnClick then @toggleSelection(elem, false) else @select(elem, false)
-          @notifySelectionChanged()
+          @_notifySelectionChanged()
 
         @lastSelected = elem
-
-  notifySelectionChanged: ->
-    @trigger "selection:change", @getSelectedModels(), this
 
   isSelected: (elem) -> elem.hasClass(@selectableClass)
 
   select: (elem, notify = true) ->
     changes = elem.not(".#{@selectableClass}").addClass(@selectableClass)
-    @notifySelectionChanged() if changes.length and notify
+    @_notifySelectionChanged() if changes.length and notify
+    @lastSelected = elem
     return
 
   deselect: (elem, notify = true) ->
     changes = elem.filter(".#{@selectableClass}").removeClass(@selectableClass)
-    @notifySelectionChanged() if changes.length and notify
+    @_notifySelectionChanged() if changes.length and notify
     return
+
+  selectAtIndex: (i) ->
+    @select @getItemsForSelection().eq(i)
 
   selectRange: (start, end) ->
     all = @getItemsForSelection()
@@ -109,4 +110,11 @@ Exo.View.registerMixin("selectable", callback, {
     return unless model = @collection.get model
     @select $(model.el)
     this
+
+  #
+  # Private
+  #
+
+  _notifySelectionChanged: ->
+    @trigger "selection:change", @getSelectedModels(), this
 })

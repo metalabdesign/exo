@@ -5,7 +5,7 @@ namespace 'Exo.Views', (exports) ->
     resultsPopoverClass: Exo.Views.CollectionListPopover
     showPopoverOnEmpty: false
     minInputValueLength: 1
-    allowNewTokens: true
+    allowFallbackTokens: true
     showAllOnDownArrow: false
 
     initialize: (options = {}) ->
@@ -24,38 +24,47 @@ namespace 'Exo.Views', (exports) ->
         }
       )
 
+      @resultsPopover.itemContext = (model) =>
+        _.extend {
+          displayAttr: @_itemDisplayText(model)
+        }, model.attributes
+
       # Attribute to filter models by
       @filterAttribute = options.filterAttribute || "name"
 
       @resultsPopover.on "item:selected", (model) ->
-        # If the model is a placeholder then tokenize just its name so that a new item is created
-        # instead of using an existing one
-        if model.get("_new")
-          @tokenize(model.get("name"))
-        else
-          @tokenize(model)
+        model = if _.isString(model) then @_buildFallbackToken(model) else model
+        @insertToken(model)
+        @$input?.val("")
       , this
 
       @matcher = new Exo.Matcher
 
-    setCollection: (collection, options = {}) ->
-      super
-      @matcher.addSource(@collection)
-
-    tokenize: (token) ->
-      if @allowNewTokens || @collection.get(token)
-        super(token)
+    setSource: (source, options = {}) ->
+      @matcher.addSource(source)
 
     handleKeyUp: (key, e) ->
       switch key
         when "down"
+          # Buggy
           if @showAllOnDownArrow && @input.value == "" && !@resultsPopover.visible
             @_showResultsPopover()
+        else
+          @_queryEntered(@input.value)
+
+      super
+
+    handleKeyDown: (key, e) ->
+      switch key
         when "up", "down"
           # Prevent re-rendering when navigating auto-completer
           return false
-        else
-          @_queryEntered(@input.value)
+        when "enter"
+          # Don't add tokens on 'enter', this happens by watching for
+          # `item:selected` events on @resultsPopover instead
+          e.preventDefault()
+          e.stopPropagation()
+          return false
       super
 
     destroy: ->
@@ -91,24 +100,16 @@ namespace 'Exo.Views', (exports) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
       resultsCollection.remove(@tokens.array)
 
-      if @allowNewTokens
-        # Insert a placeholder token for the currently entered query which the user can select
+      if @allowFallbackTokens
+        # Insert a fallback token for the currently entered query which the user can select
         # if they wish to create a new item rather than using an exsting one
-        resultsCollection.add({name: query, _new: true}) 
+        resultsCollection.add(@_buildFallbackToken(query))
 
       @resultsPopover.setCollection(resultsCollection)
+      @resultsPopover.selectAtIndex(0)
       @resultsPopover.show()
     , 75)
 
     _hideResultsPopover: ->
       @resultsPopover.collection?.reset()
       @resultsPopover.hide()
-
-    _itemDisplayText: (item) ->
-      if item instanceof Backbone.Model
-        displayText = item.get(@modelFilterAttr)
-        (-> displayText ||= item.get(attr))() for attr in ["name", "title", "full_name", "email"]
-        displayText
-      else
-        super
-

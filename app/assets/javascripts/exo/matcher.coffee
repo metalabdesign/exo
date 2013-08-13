@@ -48,7 +48,7 @@ namespace 'Exo', (exports) ->
     # Private
     #
 
-    _scoreForQuery: (string, abbreviation) ->
+    _scoreForQuery: (string, query) ->
       #
       # Stolen from https://github.com/joshaven/string_score/blob/master/coffee/string_score.coffee
       #
@@ -59,20 +59,20 @@ namespace 'Exo', (exports) ->
       # occurs only once in the code as a result.
       #string = this
       
-      # Perfect match if the string equals the abbreviation.
-      return 1.0 if string == abbreviation
+      # Perfect match if the string equals the query.
+      return 1.0 if string == query
 
       # Initializing variables.
       string_length = string.length
       total_character_score = 0
 
-      # Awarded only if the string and the abbreviation have a common prefix.
+      # Awarded only if the string and the query have a common prefix.
       should_award_common_prefix_bonus = 0.5
       
       #### Sum character scores
       
-      # Add up scores for each character in the abbreviation.
-      for c, i in abbreviation
+      # Add up scores for each character in the query.
+      for c, i in query
           # Find the index of current character (case-insensitive) in remaining part of string.
           index_c_lowercase = string.indexOf c.toLowerCase()
           index_c_uppercase = string.indexOf c.toUpperCase()
@@ -91,7 +91,7 @@ namespace 'Exo', (exports) ->
           character_score = 0.1
           
           #### Case-match bonus
-          # If the current abbreviation character has the same case 
+          # If the current query character has the same case 
           # as that of the character in the string, we add a bonus.
           #
           # **Optimization notes**:
@@ -103,7 +103,7 @@ namespace 'Exo', (exports) ->
           
           #### Consecutive character match and common prefix bonuses
           # Increase the score when each consecutive character of
-          # the abbreviation matches the first character of the 
+          # the query matches the first character of the 
           # remaining string.
           #
           # **Size optimization disabled (truthiness shortened)**:
@@ -112,7 +112,7 @@ namespace 'Exo', (exports) ->
           #     if !index_in_string
           if index_in_string == 0
               character_score += 0.8
-              # String and abbreviation have common prefix, so award bonus. 
+              # String and query have common prefix, so award bonus. 
               #
               # **Size optimization disabled (truthiness shortened)**:
               # It produces smaller code but is slower.
@@ -146,17 +146,17 @@ namespace 'Exo', (exports) ->
       #
       #     return total_character_score / string_length
       
-      abbreviation_length = abbreviation.length
-      abbreviation_score = total_character_score / abbreviation_length
+      query_length = query.length
+      query_score = total_character_score / query_length
       
       #### Reduce penalty for longer strings
       
       # **Optimization notes (code inlined)**:
       #
-      #     percentage_of_matched_string = abbreviation_length / string_length
-      #     word_score = abbreviation_score * percentage_of_matched_string
-      #     final_score = (word_score + abbreviation_score) / 2
-      final_score = ((abbreviation_score * (abbreviation_length / string_length)) + abbreviation_score) / 2
+      #     percentage_of_matched_string = query_length / string_length
+      #     word_score = query_score * percentage_of_matched_string
+      #     final_score = (word_score + query_score) / 2
+      final_score = ((query_score * (query_length / string_length)) + query_score) / 2
       
       #### Award common prefix bonus
       if should_award_common_prefix_bonus and (final_score + 0.1 < 1)

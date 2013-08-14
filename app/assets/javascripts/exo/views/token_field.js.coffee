@@ -94,9 +94,6 @@ namespace 'Exo.Views', (exports) ->
       @tokenInput.appendChild(@inputPlaceholder)
       @tokenInput.appendChild(@inputExpander)
 
-      for token in @tokens
-        @el.appendChild(token.element)
-
       @tokenContainer = document.createElement("ul")
       @tokenContainer.className = @tokenContainerClassName
       @tokenContainer.appendChild(@tokenInput)
@@ -224,6 +221,8 @@ namespace 'Exo.Views', (exports) ->
       @trigger("focus_LOL_THORAX_BUG", e)
       @keyboardManager.nominate this
 
+      @input.focus()
+
     # Returns array of tags (strings or Backbone.models)
     #
     # @return [Array<String,Backbone.Model>] tags
@@ -264,7 +263,7 @@ namespace 'Exo.Views', (exports) ->
           if @input.value
             @insertToken(@input.value)
             @$input?.val("")
-            @input?.focus()
+            @focus()
 
           e.preventDefault()
           e.stopPropagation()
@@ -295,7 +294,7 @@ namespace 'Exo.Views', (exports) ->
 
     _getNodeIndex: (target) ->
       for token, index in @tokens
-        if token.element == target
+        if token == target
           return index
       return -1
 
@@ -308,13 +307,12 @@ namespace 'Exo.Views', (exports) ->
     # Events
 
     _clickToken: (e) ->
-      @input.focus()
-
-      e.stopPropagation()
       target = e.currentTarget
+      index = @_getNodeIndex(target)
 
-      if ((index = @_getNodeIndex(target)) >= 0)
-        @selectTokenAtIndex(index)
+      @focus()
+      e.stopPropagation()
+      @selectTokenAtIndex(index) if (index >= 0)
 
     _clickTokenDelete: (e) ->
       e.stopPropagation()
@@ -349,7 +347,7 @@ namespace 'Exo.Views', (exports) ->
       @trigger("blur_LOL_THORAX_BUG", e)
 
     _click: (e) ->
-      @input.focus()
+      @focus()
       @selectLastToken() if @_maxTokensExceeded()
 
     _clickInput: (e) ->

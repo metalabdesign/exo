@@ -47,6 +47,8 @@ namespace 'Exo.Views', (exports) ->
         @el = @$originalInput.parents()[0]
         @$el = $(@el)
         @delegateEvents()
+        
+      @placeholderText ||= ""
 
       @selectedIndex = TokenField.TokenIndexes.Input
       @_collection = new Thorax.Collection

@@ -51,10 +51,19 @@ namespace 'Exo.Views', (exports) ->
         when "up", "down"
           # Prevent re-rendering when navigating auto-completer
           return false
-        when "enter"
-          @_hideResultsPopover()
         else
           @_queryEntered(@input.value)
+
+      super
+
+    handleKeyDown: (key, e) ->
+      switch key
+        when "enter"
+          # Don't add tokens on 'enter', this happens by watching for
+          # `item:selected` events on @resultsPopover instead
+          e.preventDefault()
+          e.stopPropagation()
+          return false
       super
 
     destroy: ->
@@ -96,6 +105,7 @@ namespace 'Exo.Views', (exports) ->
         resultsCollection.add(@_buildFallbackToken(query))
 
       @resultsPopover.setCollection(resultsCollection)
+      @resultsPopover.selectAtIndex(0)
       @resultsPopover.show()
     , 75)
 

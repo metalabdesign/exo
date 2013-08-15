@@ -257,7 +257,7 @@ namespace 'Exo.Views', (exports) ->
             return false
         when "enter"
           # Allow form submission if input is empty
-          if !@input.value && @selectedIndex == TokenField.TokenIndexes.Input && @allowSubmit
+          if !@input.value && @selectedIndex == TokenField.TokenIndexes.I nput && @allowSubmit
             return true
 
           if @input.value
@@ -265,8 +265,8 @@ namespace 'Exo.Views', (exports) ->
             @$input?.val("")
             @focus()
 
-          e.preventDefault()
-          e.stopPropagation()
+          e.preventdefault()
+          e.stoppropagation()
 
           return false
         else

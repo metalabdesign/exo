@@ -46,11 +46,9 @@ namespace 'Exo.Views', (exports) ->
     handleKeyUp: (key, e) ->
       switch key
         when "down"
+          # Buggy
           if @showAllOnDownArrow && @input.value == "" && !@resultsPopover.visible
             @_showResultsPopover()
-        when "up", "down"
-          # Prevent re-rendering when navigating auto-completer
-          return false
         else
           @_queryEntered(@input.value)
 
@@ -58,6 +56,9 @@ namespace 'Exo.Views', (exports) ->
 
     handleKeyDown: (key, e) ->
       switch key
+        when "up", "down"
+          # Prevent re-rendering when navigating auto-completer
+          return false
         when "enter"
           # Don't add tokens on 'enter', this happens by watching for
           # `item:selected` events on @resultsPopover instead

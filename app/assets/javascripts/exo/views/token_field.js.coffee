@@ -1,3 +1,6 @@
+# Refactoring ideas:
+# - Use a state machine
+#
 namespace 'Exo.Views', (exports) ->
   class exports.TokenField extends Exo.View
     tagName: "div"
@@ -27,7 +30,7 @@ namespace 'Exo.Views', (exports) ->
       Input: -2
 
     events:
-      "blur input": "_blur"
+      "blur input": "blur"
       "focus input": "focus"
       "click": "_click"
       "click input": "_clickInput"
@@ -76,6 +79,8 @@ namespace 'Exo.Views', (exports) ->
       @input.setAttribute("autocomplete", "off")
       @input.setAttribute("tabindex", "0")
 
+      @$input = $(@input)
+
       @inputPlaceholder = document.createElement("span")
       @inputPlaceholder.className = @inputPlaceholderClassName
 
@@ -85,8 +90,6 @@ namespace 'Exo.Views', (exports) ->
       @inputExpander.className = @inputExpanderClassName
 
       @_updatePlaceholder()
-
-      @$input = $(@input)
 
       @_toggleInputVisibility()
 
@@ -158,6 +161,8 @@ namespace 'Exo.Views', (exports) ->
     selectTokenAtIndex: (index) ->
       @deselectAll()
 
+      @$input.addClass(@hiddenClass)
+
       # TODO holy shit.. refactor this...
       if @selectedIndex != TokenField.TokenIndexes.Input && @selectedIndex != TokenField.TokenIndexes.All
         $(@tokens[@selectedIndex]).removeClass(@tokenSelectedClassName)
@@ -216,12 +221,26 @@ namespace 'Exo.Views', (exports) ->
       @selectTokenAtIndex(TokenField.TokenIndexes.All)
 
     focus: (e) ->
-      @$el.addClass(@focusClassName)
-
-      @trigger("focus_LOL_THORAX_BUG", e)
       @keyboardManager.nominate this
 
+      @$el.addClass(@focusClassName)
+      @$input.removeClass(@hiddenClass)
+
       @input.focus()
+
+      @trigger("focus_LOL_THORAX_BUG", e)
+
+    blur: (e) ->
+      @keyboardManager.revoke this
+
+      @$el.removeClass(@focusClassName)
+
+      @_updateInput(e)
+      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+      
+      @input.blur()
+
+      @trigger("blur_LOL_THORAX_BUG", e)
 
     # Returns array of tags (strings or Backbone.models)
     #
@@ -274,6 +293,8 @@ namespace 'Exo.Views', (exports) ->
             @deleteTokenAtIndex(@selectedIndex, true)
             @selectedIndex = TokenField.TokenIndexes.Input
             @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+
+          @$input.removeClass(@hiddenClass)
 
           @trigger("keypress", e)
 
@@ -334,17 +355,8 @@ namespace 'Exo.Views', (exports) ->
       return
 
     _updateInput: (e) ->
-      return unless @input
       @inputExpander.textContent = @input.value || ""
       @$el.toggleClass(@hasInputClassName, (@input.value.length > 0))
-
-    _blur: (e) ->
-      @keyboardManager.revoke this
-
-      @$el.removeClass(@focusClassName)
-      @_updateInput(e)
-      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
-      @trigger("blur_LOL_THORAX_BUG", e)
 
     _click: (e) ->
       @focus()
@@ -360,7 +372,7 @@ namespace 'Exo.Views', (exports) ->
 
     _toggleInputVisibility: ->
       exceeded = @_maxTokensExceeded()
-      $(@input).toggleClass(@hiddenClass, exceeded)
+      @$input.toggleClass(@hiddenClass, exceeded)
       @$el.toggleClass(@exceededLimitClassName, exceeded)
 
     _buildToken: (model) ->

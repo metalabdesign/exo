@@ -33,6 +33,7 @@ namespace 'Exo.Views', (exports) ->
       "blur input": "blur"
       "focus input": "focus"
       "click": "_click"
+      "mousedown": "_mouseDown"
       "click input": "_clickInput"
       "mousedown li:not(.token-input)": (e) ->
         e.preventDefault()
@@ -221,6 +222,8 @@ namespace 'Exo.Views', (exports) ->
       @selectTokenAtIndex(TokenField.TokenIndexes.All)
 
     focus: (e) ->
+      return if @isFocused()
+
       @keyboardManager.nominate this
 
       @$el.addClass(@focusClassName)
@@ -231,6 +234,8 @@ namespace 'Exo.Views', (exports) ->
       @trigger("focus_LOL_THORAX_BUG", e)
 
     blur: (e) ->
+      return unless @isFocused()
+
       @keyboardManager.revoke this
 
       @$el.removeClass(@focusClassName)
@@ -357,6 +362,11 @@ namespace 'Exo.Views', (exports) ->
     _updateInput: (e) ->
       @inputExpander.textContent = @input.value || ""
       @$el.toggleClass(@hasInputClassName, (@input.value.length > 0))
+
+    _mouseDown: (e) ->
+      # Prevent input from blurring when token field wrapper is clicked
+      e.stopPropagation()
+      e.preventDefault()
 
     _click: (e) ->
       @focus()

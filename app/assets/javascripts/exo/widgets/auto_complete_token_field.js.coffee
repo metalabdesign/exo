@@ -13,6 +13,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
       input.value = token
       input.type = "hidden"
       @el.appendChild(input)
+    return
 
   exports.NestedAttributesStrategy = (instance, tokens) ->
 

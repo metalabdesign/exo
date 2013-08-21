@@ -43,6 +43,9 @@ namespace 'Exo.Views', (exports) ->
     initialize: (options = {}) ->
       super
 
+      @disabled ||= false
+
+      # Geh....
       if @originalInput = options.input
         @$originalInput = $(@originalInput)
         @$originalInput.wrap(@el)
@@ -67,13 +70,7 @@ namespace 'Exo.Views', (exports) ->
 
       @keyboardManager ||= new Exo.KeyboardManager(@el)
 
-    render: ->
-      # In case this is a re-render, remove the token-input
-      $(@tokenInput).remove() if @tokenInput
-
-      @tokenInput = document.createElement("li")
-      @tokenInput.className = @inputClassName
-
+      # Use templates instead?
       @input = document.createElement("input")
       @input.setAttribute("autocorrect", "off")
       @input.setAttribute("autocapitalize", "off")
@@ -81,6 +78,9 @@ namespace 'Exo.Views', (exports) ->
       @input.setAttribute("tabindex", "0")
 
       @$input = $(@input)
+
+      @tokenInput = document.createElement("li")
+      @tokenInput.className = @inputClassName
 
       @inputPlaceholder = document.createElement("span")
       @inputPlaceholder.className = @inputPlaceholderClassName
@@ -90,6 +90,13 @@ namespace 'Exo.Views', (exports) ->
       @inputExpander = document.createElement("span")
       @inputExpander.className = @inputExpanderClassName
 
+      @tokenContainer = document.createElement("ul")
+      @tokenContainer.className = @tokenContainerClassName
+
+    render: ->
+      # In case this is a re-render, remove the token-input
+      $(@tokenInput).remove() if @tokenInput
+
       @_updatePlaceholder()
 
       @_toggleInputVisibility()
@@ -98,8 +105,6 @@ namespace 'Exo.Views', (exports) ->
       @tokenInput.appendChild(@inputPlaceholder)
       @tokenInput.appendChild(@inputExpander)
 
-      @tokenContainer = document.createElement("ul")
-      @tokenContainer.className = @tokenContainerClassName
       @tokenContainer.appendChild(@tokenInput)
 
       @el.appendChild(@tokenContainer)
@@ -222,7 +227,7 @@ namespace 'Exo.Views', (exports) ->
       @selectTokenAtIndex(TokenField.TokenIndexes.All)
 
     focus: (e) ->
-      return if @isFocused()
+      return if @isFocused() || @disabled
 
       @keyboardManager.nominate this
 
@@ -246,6 +251,14 @@ namespace 'Exo.Views', (exports) ->
       @input.blur()
 
       @trigger("blur_LOL_THORAX_BUG", e)
+
+    disable: ->
+      @disabled = true
+      @$el.addClass("disabled")
+      
+    enable: ->
+      @disabled = false
+      @$el.removeClass("disabled")
 
     # Returns array of tags (strings or Backbone.models)
     #
@@ -286,7 +299,7 @@ namespace 'Exo.Views', (exports) ->
 
           if @input.value
             @insertToken(@input.value)
-            @$input?.val("")
+            @$input.val("")
             @focus()
 
           e.preventdefault()
@@ -333,6 +346,7 @@ namespace 'Exo.Views', (exports) ->
     # Events
 
     _clickToken: (e) ->
+      return if @disabled
       target = e.currentTarget
       index = @_getNodeIndex(target)
 
@@ -341,6 +355,7 @@ namespace 'Exo.Views', (exports) ->
       @selectTokenAtIndex(index) if (index >= 0)
 
     _clickTokenDelete: (e) ->
+      return if @disabled
       e.stopPropagation()
       target = $(e.currentTarget).closest("li")[0]
       return if (index = @_getNodeIndex(target)) < 0
@@ -369,10 +384,12 @@ namespace 'Exo.Views', (exports) ->
       e.preventDefault()
 
     _click: (e) ->
+      return if @disabled
       @focus()
       @selectLastToken() if @_maxTokensExceeded()
 
     _clickInput: (e) ->
+      return if @disabled
       @selectTokenAtIndex(TokenField.TokenIndexes.Input)
 
     # Other

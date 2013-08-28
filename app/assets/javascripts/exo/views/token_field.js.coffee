@@ -429,7 +429,7 @@ namespace 'Exo.Views', (exports) ->
       displayText
 
     _buildFallbackToken: (query) ->
-      token = new Backbone.Model(query: query, _placeholder: true)
+      token = new Backbone.Model(query: query, _fallback: true)
       token.displayAttr = ->
         @get("query")
 

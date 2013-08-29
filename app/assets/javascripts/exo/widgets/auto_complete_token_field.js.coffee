@@ -10,7 +10,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
     for token in tokens
       input = document.createElement("input")
       input.name = inputName
-      input.value = token
+      input.value = token.get("query")
       input.type = "hidden"
       @el.appendChild(input)
     return
@@ -27,15 +27,19 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
     initialize: (options) ->
       super
+
+      @source ||= new Backbone.Collection
+      @setSource(@source)
+
       @render()
 
       unless @originalInput.value == ""
-        @insertToken(@collection.get(@originalInput.value))
+        @insertToken(@source.get(@originalInput.value))
 
       if options.tokens
         @setToken(options.tokens)
 
-      @on "change_LOL_THORAX_BUG", (tokens) =>
+      @on "add remove", (tokens) =>
         @serializeStrategy.call(this, tokens)
 
   Exo.Widget.register("autoCompleteTokenField", klass)

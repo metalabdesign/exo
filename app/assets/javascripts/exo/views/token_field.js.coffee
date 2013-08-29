@@ -54,7 +54,7 @@ namespace 'Exo.Views', (exports) ->
         @el = @$originalInput.parents()[0]
         @$el = $(@el)
         @delegateEvents()
-        
+
       @placeholderText ||= ""
 
       @selectedIndex = TokenField.TokenIndexes.Input
@@ -247,7 +247,7 @@ namespace 'Exo.Views', (exports) ->
 
       @_updateInput(e)
       @selectTokenAtIndex(TokenField.TokenIndexes.Input)
-      
+
       @input.blur()
 
       @trigger("blur_LOL_THORAX_BUG", e)
@@ -255,7 +255,7 @@ namespace 'Exo.Views', (exports) ->
     disable: ->
       @disabled = true
       @$el.addClass("disabled")
-      
+
     enable: ->
       @disabled = false
       @$el.removeClass("disabled")

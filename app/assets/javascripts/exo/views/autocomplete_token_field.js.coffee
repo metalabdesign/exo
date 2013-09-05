@@ -98,7 +98,7 @@ namespace 'Exo.Views', (exports) ->
 
     _showResultsPopover: _.debounce((query) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
-      resultsCollection.remove(@tokens.array)
+      resultsCollection.remove(@tokens.models)
 
       if @allowFallbackTokens
         # Insert a fallback token for the currently entered query which the user can select

@@ -1,7 +1,7 @@
 namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
   exports.ReplaceIdStrategy = (tokens) ->
-    if id = tokens[0].id
+    if id = tokens[0]?.id
       @originalInput.value = id
 
   exports.ArrayStrategy = (tokens) ->
@@ -40,6 +40,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
         @setToken(options.tokens)
 
       @on "add remove", (tokens) =>
+        tokens = if tokens instanceof Array then tokens else [tokens]
         @serializeStrategy.call(this, tokens)
 
   Exo.Widget.register("autoCompleteTokenField", klass)

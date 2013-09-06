@@ -1,5 +1,7 @@
 namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
+  # TODO add docs for all of these!!!
+  
   exports.ReplaceIdStrategy = (tokens) ->
     if id = tokens[0]?.id
       @originalInput.value = id
@@ -15,12 +17,31 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
       @el.appendChild(input)
     return
 
-  exports.NestedAttributesStrategy = (instance, tokens) ->
+  exports.NestedAttributesStrategy = (tokens) ->
+    token = tokens[0]
+    
+
+    if !token.isNew()
+      # If token is an existing object than convert nested attributes to ID attribute instead
+      #
+      # Example:
+      #
+      # employee[employer_attributes][name]
+      #
+      # becomes
+      #
+      # employee[employer_id]
+      
+      replaceNestedAttributesRegex = /_attributes](\[\w+\])+$/
+
+      @originalInput.name = @originalInput.name.replace(replaceNestedAttributesRegex, "_id]")
+      @originalInput.value = token.id
+    else
+      @originalInput.value = token.get("query")
 
   klass = class extends Exo.Views.AutocompleteTokenField
-
     constructor: (el, options = {}) ->
-      @serializeStrategy = options.serializeStrategy || exports.NestedAttributesStrategy
+      @serializeStrategy = options.serializeStrategy || exports.ArrayStrategy
 
       options.input = el[0]
       super(options)
@@ -41,6 +62,6 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
       @on "add remove", (tokens) =>
         tokens = if tokens instanceof Array then tokens else [tokens]
-        @serializeStrategy.call(this, tokens)
+        @serializeStrategy.call(this, tokens, options)
 
   Exo.Widget.register("autoCompleteTokenField", klass)

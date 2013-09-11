@@ -79,6 +79,9 @@ namespace 'Exo.Views', (exports) ->
 
       @$input = $(@input)
 
+      @$input.bind "paste", (e) =>
+        _.defer => @handleKeyUp(e)
+
       @tokenInput = document.createElement("li")
       @tokenInput.className = @inputClassName
 
@@ -230,11 +233,10 @@ namespace 'Exo.Views', (exports) ->
       return if @isFocused() || @disabled
 
       @keyboardManager.nominate this
-
+      @input.focus()
       @$el.addClass(@focusClassName)
       @$input.removeClass(@hiddenClass)
-
-      @input.focus()
+      @selectLastToken() if @_maxTokensExceeded()
 
       @trigger("focus_LOL_THORAX_BUG", e)
 
@@ -242,13 +244,11 @@ namespace 'Exo.Views', (exports) ->
       return unless @isFocused()
 
       @keyboardManager.revoke this
-
-      @$el.removeClass(@focusClassName)
-
-      @_updateInput(e)
-      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
-
+      @$input.val("")
       @input.blur()
+      @$el.removeClass(@focusClassName)
+      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+      @_updateInput(e)
 
       @trigger("blur_LOL_THORAX_BUG", e)
 
@@ -260,9 +260,9 @@ namespace 'Exo.Views', (exports) ->
       @disabled = false
       @$el.removeClass("disabled")
 
-    # Returns array of tags (strings or Backbone.models)
+    # Returns array of Backbone.models
     #
-    # @return [Array<String,Backbone.Model>] tags
+    # @return [Array<Backbone.Model>] tags
     serialize: ->
       @_collection.models
 
@@ -294,7 +294,7 @@ namespace 'Exo.Views', (exports) ->
             return false
         when "enter"
           # Allow form submission if input is empty
-          if !@input.value && @selectedIndex == TokenField.TokenIndexes.I nput && @allowSubmit
+          if !@input.value && @selectedIndex == TokenField.TokenIndexes.Input && @allowSubmit
             return true
 
           if @input.value
@@ -306,15 +306,11 @@ namespace 'Exo.Views', (exports) ->
           e.stoppropagation()
 
           return false
+        when "tab", "⇧+tab"
+          # Allow users to tab through token fields like any other input
+          return false
         else
-          if @selectedIndex != TokenField.TokenIndexes.Input
-            @deleteTokenAtIndex(@selectedIndex, true)
-            @selectedIndex = TokenField.TokenIndexes.Input
-            @selectTokenAtIndex(TokenField.TokenIndexes.Input)
-
-          @$input.removeClass(@hiddenClass)
-
-          @trigger("keypress", e)
+          @_keyPressed(e)
 
       @_updateInput(e)
       undefined
@@ -343,21 +339,22 @@ namespace 'Exo.Views', (exports) ->
     _maxTokensExceeded: ->
       @_collection.length >= @maxTokens
 
-    # Events
-
     _clickToken: (e) ->
       return if @disabled
+
       target = e.currentTarget
       index = @_getNodeIndex(target)
 
       @focus()
-      e.stopPropagation()
       @selectTokenAtIndex(index) if (index >= 0)
 
     _clickTokenDelete: (e) ->
       return if @disabled
+
       e.stopPropagation()
       target = $(e.currentTarget).closest("li")[0]
+
+      # Wut?
       return if (index = @_getNodeIndex(target)) < 0
 
       @deleteTokenAtIndex(index, true)
@@ -374,6 +371,14 @@ namespace 'Exo.Views', (exports) ->
 
       return
 
+    _click: (e) ->
+      return if @disabled
+      @focus()
+
+    _clickInput: (e) ->
+      return if @disabled || @selectedIndex == TokenField.TokenIndexes.Input
+      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+
     _updateInput: (e) ->
       @inputExpander.textContent = @input.value || ""
       @$el.toggleClass(@hasInputClassName, (@input.value.length > 0))
@@ -383,19 +388,19 @@ namespace 'Exo.Views', (exports) ->
       e.stopPropagation()
       e.preventDefault()
 
-    _click: (e) ->
-      return if @disabled
-      @focus()
-      @selectLastToken() if @_maxTokensExceeded()
+    _keyPressed: (e) ->
+      if @selectedIndex != TokenField.TokenIndexes.Input
+        @deleteTokenAtIndex(@selectedIndex, true)
+        @selectedIndex = TokenField.TokenIndexes.Input
+        @selectTokenAtIndex(TokenField.TokenIndexes.Input)
 
-    _clickInput: (e) ->
-      return if @disabled
-      @selectTokenAtIndex(TokenField.TokenIndexes.Input)
+      @$input.removeClass(@hiddenClass)
 
-    # Other
+      @trigger("keypress", e)
 
     _updatePlaceholder: ->
-      @inputPlaceholder?.innerHTML = @placeholderText
+      if @inputPlaceholder
+        @inputPlaceholder?.innerHTML = @placeholderText
 
     _toggleInputVisibility: ->
       exceeded = @_maxTokensExceeded()
@@ -416,7 +421,7 @@ namespace 'Exo.Views', (exports) ->
       node
 
     _tokensChanged: (token) ->
-      @_updatePlaceholder() if @inputPlaceholder
+      @_updatePlaceholder()
 
     # Get the display text for a model by calling either `displayAttr` or by trying common display
     # text attributes

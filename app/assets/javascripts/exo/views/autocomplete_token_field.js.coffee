@@ -46,7 +46,7 @@ namespace 'Exo.Views', (exports) ->
     handleKeyUp: (key, e) ->
       switch key
         when "down"
-          # Buggy
+          # Buggy..
           if @showAllOnDownArrow && @input.value == "" && !@resultsPopover.visible
             @_showResultsPopover()
         else
@@ -60,11 +60,12 @@ namespace 'Exo.Views', (exports) ->
           # Prevent re-rendering when navigating auto-completer
           return false
         when "enter"
-          # Don't add tokens on 'enter', this happens by watching for
-          # `item:selected` events on @resultsPopover instead
-          e.preventDefault()
-          e.stopPropagation()
-          return false
+          if @selectedIndex > -1
+            # Don't add tokens on 'enter', this happens by watching for
+            # `item:selected` events on @resultsPopover instead
+            e.preventDefault()
+            e.stopPropagation()
+            return false
       super
 
     destroy: ->
@@ -98,10 +99,12 @@ namespace 'Exo.Views', (exports) ->
 
     _showResultsPopover: _.debounce((query) ->
       resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
-      resultsCollection.remove(@tokens.models)
+
+      # Don't show tokens in the results collection that already exist in the token field
+      resultsCollection.remove(@_collection.models)
 
       if @allowFallbackTokens
-        # Insert a fallback token for the currently entered query which the user can select
+        # Insert a 'fallback' token for the currently entered query which the user can select
         # if they wish to create a new item rather than using an exsting one
         resultsCollection.add(@_buildFallbackToken(query))
 

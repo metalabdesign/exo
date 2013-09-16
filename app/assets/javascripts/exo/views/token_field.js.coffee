@@ -114,7 +114,7 @@ namespace 'Exo.Views', (exports) ->
 
       this
 
-    insertToken: (tokens) ->
+    insertToken: (tokens, options = {}) ->
       return if @_maxTokensExceeded()
 
       tokens = if _.isArray(tokens) then tokens.slice() else [tokens]
@@ -128,7 +128,7 @@ namespace 'Exo.Views', (exports) ->
         unless @_tokenExists(token.model)
           @tokenContainer.insertBefore(token.element, @tokenInput)
           @tokens.push token.element
-          @_collection.add token.model
+          @_collection.add token.model, options
 
       @_updateInput()
       @_toggleInputVisibility()

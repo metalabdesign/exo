@@ -1,5 +1,5 @@
 callback = ->
-  @initializeSelection()
+  @initializeSelection?()
 
 Exo.View.registerMixin("selectable", callback, {
   selectableClass: 'selected'

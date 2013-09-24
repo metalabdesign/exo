@@ -125,7 +125,7 @@ Thorax.View = Backbone.View.extend({
     // in the case of a nested helper, which will cause an error.
     // In either case it's not necessary to ever call
     // _removeChild on a HelperView as _addChild should only
-    // be called when a HelperView is created.  
+    // be called when a HelperView is created.
     if (view.parent && view.parent !== this && !view._helperOptions) {
       view.parent._removeChild(view);
     }
@@ -676,7 +676,10 @@ Thorax.Util = {
       }
       return (key === 'className' ? 'class' : key) + '="' + Handlebars.Utils.escapeExpression(formattedValue) + '"';
     }).join(' ') + '>' + (_.isUndefined(content) ? '' : content) + '</' + tag + '>';
-  }
+  },
+
+  createInheritVars: createInheritVars,
+  resetInheritVars: resetInheritVars
 };
 
 ;;
@@ -2071,7 +2074,7 @@ Thorax.LayoutView = Thorax.View.extend({
       return false;
     }
     this.trigger('change:view:start', view, oldView, options);
-    
+
     remove = _.bind(function() {
       if (oldView) {
         oldView.$el.remove();
@@ -2193,7 +2196,7 @@ Thorax.CollectionHelperView = Thorax.CollectionView.extend({
         shouldBindItemFilter = _.isFunction(options.itemFilter);
 
     var response = Thorax.HelperView.call(this, options);
-    
+
     if (shouldBindItemContext) {
       this.itemContext = _.bind(this.itemContext, this.parent);
     } else if (_.isString(this.itemContext)) {

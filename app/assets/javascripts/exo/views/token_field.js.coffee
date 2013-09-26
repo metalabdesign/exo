@@ -302,8 +302,8 @@ namespace 'Exo.Views', (exports) ->
             @$input.val("")
             @focus()
 
-          e.preventdefault()
-          e.stoppropagation()
+          e.preventDefault()
+          e.stopPropagation()
 
           return false
         when "tab", "⇧+tab"

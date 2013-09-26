@@ -1,7 +1,7 @@
 namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
   # TODO add docs for all of these!!!
-  
+
   exports.ReplaceIdStrategy = (tokens) ->
     if id = tokens[0]?.id
       @originalInput.value = id
@@ -9,6 +9,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
   exports.ArrayStrategy = (tokens) ->
     inputName = @originalInput.name + "[]"
     @$el.find('[type="hidden"]').remove()
+
     for token in tokens
       input = document.createElement("input")
       input.name = inputName
@@ -19,7 +20,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
 
   exports.NestedAttributesStrategy = (tokens) ->
     token = tokens[0]
-    
+
 
     if !token.isNew()
       # If token is an existing object than convert nested attributes to ID attribute instead
@@ -31,7 +32,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
       # becomes
       #
       # employee[employer_id]
-      
+
       replaceNestedAttributesRegex = /_attributes](\[\w+\])+$/
 
       @originalInput.name = @originalInput.name.replace(replaceNestedAttributesRegex, "_id]")
@@ -60,8 +61,7 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
       if options.tokens
         @setToken(options.tokens)
 
-      @on "add remove", (tokens) =>
-        tokens = if tokens instanceof Array then tokens else [tokens]
-        @serializeStrategy.call(this, tokens, options)
+      @on "add remove", (token) =>
+        @serializeStrategy.call(this, @serialize(), options)
 
   Exo.Widget.register("autoCompleteTokenField", klass)

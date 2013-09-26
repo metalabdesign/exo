@@ -66,6 +66,7 @@ namespace 'Exo.Views', (exports) ->
             e.preventDefault()
             e.stopPropagation()
             return false
+
       super
 
     destroy: ->

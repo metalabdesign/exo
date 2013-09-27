@@ -87,8 +87,6 @@ namespace 'Exo.Views', (exports) ->
         false
       else if @_queryMeetsMinLength(query)
         true
-      else if @showAllOnDownArrow && @input.value == ""
-        true
       else
         false
 

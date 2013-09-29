@@ -41,11 +41,12 @@ namespace 'Exo', (exports) ->
       @_responders = []
       @cid = _.uniqueId("k")
 
-      @el = document unless @el
+      @el ||= document
+      @$el = $(@el)
 
       boundDispatch = $.proxy(this, "_dispatch")
-      $(@el).on("keyup.#{ @cid }", boundDispatch)
-            .on("keydown.#{ @cid }", boundDispatch)
+      @$el.on("keyup.#{ @cid }", boundDispatch)
+          .on("keydown.#{ @cid }", boundDispatch)
 
     _dispatch: (e) ->
       # exit early if no responders
@@ -60,10 +61,7 @@ namespace 'Exo', (exports) ->
       keys.push '⌃' if e.ctrlKey
       keys.push '⌘' if e.metaKey
 
-      if _map[e.keyCode]
-        keys.push _map[e.keyCode]
-      else
-        keys.push String.fromCharCode e.keyCode
+      keys.push _map[e.keyCode] || String.fromCharCode e.keyCode
 
       str = keys.join '+'
 
@@ -86,20 +84,18 @@ namespace 'Exo', (exports) ->
 
     nominate: (responder) ->
       # Remove responder, make it first responder
-      index = @_responders.indexOf responder
-      @_responders.splice index, 1 if index > -1
+      idx = @_responders.indexOf responder
+      @_responders.splice idx, 1 if idx > -1
       @_responders.unshift responder
       return this
 
     revoke: (responder) ->
       idx = @_responders.indexOf responder
       return this if idx < 0
-
       @_responders.splice idx, 1
-
-      return this
+      this
 
     destroy: ->
-      $(@el).off("keyup.#{ @cid }")
-            .off "keydown.#{ @cid }"
+      @$el.off("keyup.#{ @cid }")
+          .off "keydown.#{ @cid }"
       @_responders = null

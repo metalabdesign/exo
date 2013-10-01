@@ -39,6 +39,7 @@ namespace 'Exo.Views', (exports) ->
       , this
 
       @matcher = new Exo.Matcher
+        filterAttribute: @filterAttribute
 
     setSource: (source, options = {}) ->
       @matcher.addSource(source)

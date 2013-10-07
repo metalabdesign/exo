@@ -37,6 +37,20 @@ namespace 'Exo', (exports) ->
       '⌘': 91, command: 91
     }
 
+    @keyStringFromEvent = (e) ->
+      keys = []
+      keys.push '⇧' if e.shiftKey
+      keys.push '⌥' if e.altKey
+      keys.push '⌃' if e.ctrlKey
+      keys.push '⌘' if e.metaKey
+
+      if _map[e.keyCode]
+        keys.push _map[e.keyCode]
+      else
+        keys.push String.fromCharCode e.keyCode
+
+      keys.join '+'
+
     constructor: (@el = null) ->
       @_responders = []
       @cid = _.uniqueId("k")
@@ -55,22 +69,14 @@ namespace 'Exo', (exports) ->
       # exit early if it's just a modifier key all by itself
       return if e.keyCode in [16, 18, 17, 91]
 
-      keys = []
-      keys.push '⇧' if e.shiftKey
-      keys.push '⌥' if e.altKey
-      keys.push '⌃' if e.ctrlKey
-      keys.push '⌘' if e.metaKey
-
-      keys.push _map[e.keyCode] || String.fromCharCode e.keyCode
-
-      str = keys.join '+'
+      str = KeyboardManager.keyStringFromEvent e
 
       if e.type == "keydown"
         @_handleKey("handleKeyDown", str, e)
       else if e.type == "keyup"
         @_handleKey("handleKeyUp", str, e)
 
-      return this
+      this
 
     _handleKey: (handlerMethod, key, e) ->
       for responder in @_responders
@@ -87,7 +93,7 @@ namespace 'Exo', (exports) ->
       idx = @_responders.indexOf responder
       @_responders.splice idx, 1 if idx > -1
       @_responders.unshift responder
-      return this
+      this
 
     revoke: (responder) ->
       idx = @_responders.indexOf responder

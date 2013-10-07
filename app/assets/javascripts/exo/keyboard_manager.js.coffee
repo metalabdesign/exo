@@ -37,23 +37,7 @@ namespace 'Exo', (exports) ->
       '⌘': 91, command: 91
     }
 
-    constructor: (@el = null) ->
-      @_responders = []
-      @cid = _.uniqueId("k")
-
-      @el = document unless @el
-
-      boundDispatch = $.proxy(this, "_dispatch")
-      $(@el).on("keyup.#{ @cid }", boundDispatch)
-            .on("keydown.#{ @cid }", boundDispatch)
-
-    _dispatch: (e) ->
-      # exit early if no responders
-      return this if not @_responders.length
-
-      # exit early if it's just a modifier key all by itself
-      return if e.keyCode in [16, 18, 17, 91]
-
+    @keyStringFromEvent = (e) ->
       keys = []
       keys.push '⇧' if e.shiftKey
       keys.push '⌥' if e.altKey
@@ -65,14 +49,34 @@ namespace 'Exo', (exports) ->
       else
         keys.push String.fromCharCode e.keyCode
 
-      str = keys.join '+'
+      keys.join '+'
+
+    constructor: (@el = null) ->
+      @_responders = []
+      @cid = _.uniqueId("k")
+
+      @el ||= document
+      @$el = $(@el)
+
+      boundDispatch = $.proxy(this, "_dispatch")
+      @$el.on("keyup.#{ @cid }", boundDispatch)
+          .on("keydown.#{ @cid }", boundDispatch)
+
+    _dispatch: (e) ->
+      # exit early if no responders
+      return this if not @_responders.length
+
+      # exit early if it's just a modifier key all by itself
+      return if e.keyCode in [16, 18, 17, 91]
+
+      str = KeyboardManager.keyStringFromEvent e
 
       if e.type == "keydown"
         @_handleKey("handleKeyDown", str, e)
       else if e.type == "keyup"
         @_handleKey("handleKeyUp", str, e)
 
-      return this
+      this
 
     _handleKey: (handlerMethod, key, e) ->
       for responder in @_responders
@@ -86,20 +90,18 @@ namespace 'Exo', (exports) ->
 
     nominate: (responder) ->
       # Remove responder, make it first responder
-      index = @_responders.indexOf responder
-      @_responders.splice index, 1 if index > -1
+      idx = @_responders.indexOf responder
+      @_responders.splice idx, 1 if idx > -1
       @_responders.unshift responder
-      return this
+      this
 
     revoke: (responder) ->
       idx = @_responders.indexOf responder
       return this if idx < 0
-
       @_responders.splice idx, 1
-
-      return this
+      this
 
     destroy: ->
-      $(@el).off("keyup.#{ @cid }")
-            .off "keydown.#{ @cid }"
+      @$el.off("keyup.#{ @cid }")
+          .off "keydown.#{ @cid }"
       @_responders = null

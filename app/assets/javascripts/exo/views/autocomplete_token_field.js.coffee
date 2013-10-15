@@ -114,7 +114,7 @@ namespace 'Exo.Views', (exports) ->
       @resultsPopover.setCollection(resultsCollection)
       @resultsPopover.selectAtIndex(0)
       @resultsPopover.show()
-    , 75)
+    , 25)
 
     _hideResultsPopover: ->
       @resultsPopover.collection?.reset()

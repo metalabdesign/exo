@@ -1,9 +1,10 @@
 namespace 'Exo', (exports) ->
   class exports.Widget
+    _cid = 0
 
     delegateEventSplitter = /^(\S+)\s*(.*)$/
 
-    _.extend(@prototype, Backbone.Events) if Backbone?.Events
+    _.extend(@prototype, Backbone.Events) if _? && Backbone?.Events
 
     @register: (name, klass) ->
       $.fn[name] = (params...) ->
@@ -21,7 +22,7 @@ namespace 'Exo', (exports) ->
         this
 
     constructor: (el, options) ->
-      @cid = _.uniqueId "exo-widget"
+      @cid = "exo-widget-" + _cid++
       @setElement(el)
 
       @options = {}

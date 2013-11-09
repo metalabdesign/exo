@@ -54,12 +54,12 @@ namespace 'Exo', (exports) ->
 
     _delegateEvents: (events) ->
       for key, method of events
-        method = this[method] if !_.isFunction(method)
+        method = this[method] if typeof method != "function"
         throw new Error("Method '#{ events[key] }' does not exist") if !method
         match = key.match(delegateEventSplitter)
         eventName = match[1]
         selector = match[2]
-        method = _.bind(method, this)
+        method = $.proxy(method, this)
         eventName += ".delegateEvents-#{ @cid }"
 
         if selector == ""

@@ -37,7 +37,7 @@ namespace 'Exo', (exports) ->
       @setOptions dataOptions, @defaults, options
 
     setOptions: (options...) ->
-      @options = _.extend.apply null, [@options].concat options
+      @options = $.extend.apply null, [@options].concat options
 
     setElement: (element, delegate) ->
       @undelegateEvents() if @$el

@@ -45,15 +45,12 @@ namespace 'Exo.Views', (exports) ->
 
       @disabled ||= false
 
-      # Geh....
       if @originalInput = options.input
         @$originalInput = $(@originalInput)
         @$originalInput.wrap(@el)
         @$originalInput.attr("type", "hidden")
-        @placeholderText = @$originalInput.attr("placeholder")
-        @el = @$originalInput.parents()[0]
-        @$el = $(@el)
-        @delegateEvents()
+        @placeholderText ||= @$originalInput.attr("placeholder")
+        @setElement @$originalInput.parents()[0]
 
       @placeholderText ||= ""
 
@@ -70,7 +67,11 @@ namespace 'Exo.Views', (exports) ->
 
       @keyboardManager ||= new Exo.KeyboardManager(@el)
 
-      # Use templates instead?
+      @render()
+
+    render: ->
+      return this if @_renderCount
+
       @input = document.createElement("input")
       @input.setAttribute("autocorrect", "off")
       @input.setAttribute("autocapitalize", "off")
@@ -96,10 +97,6 @@ namespace 'Exo.Views', (exports) ->
       @tokenContainer = document.createElement("ul")
       @tokenContainer.className = @tokenContainerClassName
 
-    render: ->
-      # In case this is a re-render, remove the token-input
-      $(@tokenInput).remove() if @tokenInput
-
       @_updatePlaceholder()
 
       @_toggleInputVisibility()
@@ -112,6 +109,7 @@ namespace 'Exo.Views', (exports) ->
 
       @el.appendChild(@tokenContainer)
 
+      @_renderCount = 1
       this
 
     insertToken: (tokens, options = {}) ->
@@ -400,7 +398,7 @@ namespace 'Exo.Views', (exports) ->
 
     _updatePlaceholder: ->
       if @inputPlaceholder
-        @inputPlaceholder?.innerHTML = @placeholderText
+        @inputPlaceholder.innerHTML = @placeholderText
 
     _toggleInputVisibility: ->
       exceeded = @_maxTokensExceeded()

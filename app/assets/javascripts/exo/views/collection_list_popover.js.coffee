@@ -1,7 +1,7 @@
 #= require ./popover
 namespace 'Exo.Views', (exports) ->
   class exports.CollectionListPopover extends Exo.Views.Popover
-    @mixins : ["selectable"]
+    @mixin "selectable"
     selectableSelector: ".collection-item"
 
     events:

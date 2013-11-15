@@ -9,6 +9,7 @@
 #= require exo/keyboard_manager
 #= require exo/matcher
 #
-#= require exo/views
+#= require exo/view
 #= require exo/mixins
+#= require exo/views
 #= require exo/widgets

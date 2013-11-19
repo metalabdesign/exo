@@ -53,8 +53,6 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
       @source ||= new Backbone.Collection
       @setSource(@source)
 
-      @render()
-
       unless @originalInput.value == ""
         @insertToken(@source.get(@originalInput.value))
 

@@ -61,6 +61,8 @@ namespace 'Exo.Views', (exports) ->
 
     handleKeyDown: (key, e) ->
       switch key
+        when "tab", "⇧+tab"
+          @_hideResultsPopover()
         when "up", "down"
           return false # Prevent re-rendering when navigating auto-completer
         when "enter"

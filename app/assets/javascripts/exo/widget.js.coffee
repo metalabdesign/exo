@@ -27,7 +27,8 @@ namespace 'Exo', (exports) ->
 
       @options = {}
       dataOptions = {}
-      sanitizer = new RegExp("^#{ @constructor.name.toLowerCase() }(\\w+)")
+      safeName = @constructor.name || @constructor.toString().match(/function ([A-Z]{1}[a-zA-Z]*)/)[1]
+      sanitizer = new RegExp("^#{ safeName.toLowerCase() }(\\w+)")
       for key, value of @el.dataset
         if match = key.match(sanitizer)
           realKey = match[1]

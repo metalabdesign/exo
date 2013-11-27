@@ -10,7 +10,7 @@ namespace 'Exo', (exports) ->
       @threshold = options.threshold
       @modelFilterAttr = options.filterAttribute || "name"
 
-    resultsForString: (query) ->
+    resultsForString: (query, callback) ->
       results = []
 
       for source in @sources
@@ -39,8 +39,7 @@ namespace 'Exo', (exports) ->
       results.sort((a,b) -> b.score - a.score)
       results = _.pluck(results, "object")
       @results.reset results
-
-      return @results
+      callback(@results)
 
     addSource: (source) ->
       @sources.push(source)

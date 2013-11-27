@@ -103,19 +103,20 @@ namespace 'Exo.Views', (exports) ->
         @_hideResultsPopover()
 
     _showResultsPopover: _.debounce((query) ->
-      resultsCollection = new Thorax.Collection(@matcher.resultsForString(query).array)
+      @matcher.resultsForString query, (results) =>
+        resultsCollection = new Thorax.Collection(results.array)
 
-      # Don't show tokens in the results collection that already exist in the token field
-      resultsCollection.remove(@_collection.models)
+        # Don't show tokens in the results collection that already exist in the token field
+        resultsCollection.remove(@_collection.models)
 
-      if @allowFallbackTokens
-        # Insert a 'fallback' token for the currently entered query which the user can select
-        # if they wish to create a new item rather than using an exsting one
-        resultsCollection.add(@_buildFallbackToken(query))
+        if @allowFallbackTokens
+          # Insert a 'fallback' token for the currently entered query which the user can select
+          # if they wish to create a new item rather than using an exsting one
+          resultsCollection.add(@_buildFallbackToken(query))
 
-      @resultsPopover.setCollection(resultsCollection)
-      @resultsPopover.selectAtIndex(0)
-      @resultsPopover.show()
+        @resultsPopover.setCollection(resultsCollection)
+        @resultsPopover.selectAtIndex(0)
+        @resultsPopover.show()
     , 25)
 
     _hideResultsPopover: ->

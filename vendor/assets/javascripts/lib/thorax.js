@@ -59,7 +59,7 @@ var Thorax = this.Thorax = {
     throw err;
   },
   //deprecated, here to ensure existing projects aren't mucked with
-  templates: Handlebars.templates 
+  templates: Handlebars.templates
 };
 
 Thorax.View = Backbone.View.extend({
@@ -2019,7 +2019,7 @@ Thorax.CollectionHelperView = Thorax.CollectionView.extend({
 
     var self = this;
     _.each(['itemFilter', 'itemContext', 'renderItem', 'renderEmpty'], function(propertyName) {
-      if (self.parent[propertyName] && !this[propertyName]) {
+      if (self.parent[propertyName]) {
         self[propertyName] = function() {
           return self.parent[propertyName].apply(self.parent, arguments);
         };
@@ -2031,6 +2031,7 @@ Thorax.CollectionHelperView = Thorax.CollectionView.extend({
 _.extend(Thorax.CollectionHelperView.prototype, helperViewPrototype);
 
 var collectionOptionNames = {
+  'item-context': 'itemContext',
   'item-template': 'itemTemplate',
   'empty-template': 'emptyTemplate',
   'item-view': 'itemView',
@@ -2047,6 +2048,7 @@ function forwardRenderEvent(eventName) {
 }
 
 var forwardableProperties = [
+  'itemContext',
   'itemTemplate',
   'itemView',
   'emptyTemplate',

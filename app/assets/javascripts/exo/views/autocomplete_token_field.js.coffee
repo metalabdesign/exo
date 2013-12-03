@@ -41,7 +41,10 @@ namespace 'Exo.Views', (exports) ->
       @matcher = new Exo.Matcher
         filterAttribute: @filterAttribute
 
-    setSource: (source, options = {}) ->
+    setSource: (source) ->
+      @matcher.setSource(source)
+
+    addSource: (source) ->
       @matcher.addSource(source)
 
     handleKeyUp: (key, e) ->

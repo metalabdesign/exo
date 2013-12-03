@@ -43,3 +43,9 @@ namespace 'Exo', (exports) ->
 
     addSource: (source) ->
       @sources.push(source)
+
+    setSource: (source) ->
+      @setSources([source])
+
+    setSources: (sources) ->
+      @sources = sources

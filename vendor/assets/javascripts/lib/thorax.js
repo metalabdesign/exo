@@ -2830,5 +2830,3 @@ if (isIE) {
 
 
 })();
-
-//@ sourceMappingURL=thorax.js.map

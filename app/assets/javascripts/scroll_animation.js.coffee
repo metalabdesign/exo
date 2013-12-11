@@ -58,7 +58,7 @@ class @ScrollAnimation
     @state = STATE_IDLE
 
   resize: (viewportHeight) ->
-    top = $(@el).offset()['top']
+    top = @el.offsetTop
     @start = top + @offset(viewportHeight)
     @height = @el.offsetHeight
     @end = @height + @start

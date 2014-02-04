@@ -8,6 +8,8 @@ namespace 'Exo.Views', (exports) ->
     firstDayOfWeek: 1
     linkTemplate: null
 
+    DATESTAMP_FORMAT = "YYYYMMDD"
+
     position:
       my: 'left top',
       at: 'left bottom',
@@ -24,7 +26,7 @@ namespace 'Exo.Views', (exports) ->
 
       "mousedown .day": (e) ->
         e.preventDefault()
-        @select(e.target.getAttribute("data-datestamp"))
+        @select(moment(e.target.getAttribute("data-datestamp"), DATESTAMP_FORMAT))
 
     initialize: ->
       @range = []
@@ -96,7 +98,7 @@ namespace 'Exo.Views', (exports) ->
             classes.push('today')
 
            E = $(document.createElement('a')).attr({
-            'data-datestamp': d.format(@dateFormat),
+            'data-datestamp': d.format(DATESTAMP_FORMAT),
             'class': classes.join(' ')
           }).html(d.date())
 
@@ -136,12 +138,12 @@ namespace 'Exo.Views', (exports) ->
 
       options = _.extend({ silent: false, toggle: true }, options)
 
-      if date.format(@dateFormat) != @now.format(@dateFormat)
+      if date.format(DATESTAMP_FORMAT) != @now.format(DATESTAMP_FORMAT)
         @showDate(date)
 
       @clear() if(options.toggle)
 
-      elem = @$body.find('[data-datestamp="' + date.format(@dateFormat) + '"]').addClass('highlight')
+      elem = @$body.find('[data-datestamp="' + date.format(DATESTAMP_FORMAT) + '"]').addClass('selected')
 
       if !options.silent
         @trigger('select', date, elem)
@@ -166,5 +168,5 @@ namespace 'Exo.Views', (exports) ->
 
     clear: ->
       @trigger('clear')
-      @$body.children().removeClass('highlight')
+      @$body.children().removeClass('selected')
 

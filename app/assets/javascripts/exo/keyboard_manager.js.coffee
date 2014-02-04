@@ -1,5 +1,5 @@
 namespace 'Exo', (exports) ->
-  class exports.KeyboardManager
+  keyboardManager = class exports.KeyboardManager
 
     _map = {
       8: 'backspace'
@@ -36,6 +36,15 @@ namespace 'Exo', (exports) ->
       '⌃': 17, ctrl: 17, control: 17,
       '⌘': 91, command: 91
     }
+
+    @isNonPrintableKey = (keyCode) ->
+      modifierKeys = [8, 9, 13, 16, 17, 18, 19, 20, 27, 33, 34, 35, 26, 46, 93]
+      arrowKeys = [37, 38, 39, 40, 91, 92]
+      fKeys = [112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 144, 145]
+      keyCode in [modifierKeys..., arrowKeys..., fKeys]
+
+    @isPrintableKey = (keyCode) ->
+      !keyboardManager.isNonPrintableKey(keyCode)
 
     @keyStringFromEvent = (e) ->
       keys = []

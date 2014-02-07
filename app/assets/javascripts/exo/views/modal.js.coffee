@@ -4,7 +4,6 @@ namespace 'Exo.Views', (exports) ->
 
     className: "modal"
 
-    # @todo all of these
     width: null
     height: "auto"
     appendTo: document.body
@@ -16,7 +15,7 @@ namespace 'Exo.Views', (exports) ->
     destroyOnHide: false
     escToClose: true
 
-    topOffset:  "80px"
+    topOffset: 80
 
     headerSelector:  "> .modal-header"
     sidebarSelect:   "> .modal-sidebar"
@@ -26,11 +25,7 @@ namespace 'Exo.Views', (exports) ->
     initialize: ->
       # @param content [String, Backbone.View] optional content to append to modal-content
       @content ||= null
-      
-      # @todo
-      @dimensions ||= { width: null, height: null }
-
-      @keyboardManager ||= new Exo.KeyboardManager(@el)
+      @dimensions = { width: null, height: null }
 
     positionElement: ->
       @_setHeight()
@@ -69,7 +64,6 @@ namespace 'Exo.Views', (exports) ->
       @getOverlay().show() if @modal
       @$el.show()
       @positionElement()
-      @keyboardManager.nominate(this)
       @trigger "show"
 
     hide: (e) ->
@@ -116,14 +110,8 @@ namespace 'Exo.Views', (exports) ->
       @_overlay?.remove()
       super
 
-    destroy: ->
-      super
-      @keyboardManager.revoke(this)
-
-    # 
     # Private
-    #
-    
+
     _detectHeightForPositioning: ->
       @$el.height()
 

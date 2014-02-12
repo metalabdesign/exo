@@ -12,25 +12,24 @@ namespace 'Exo.Views', (exports) ->
     name: "collection_list_popover"
     className: "collection-list-popover popover"
 
-    initialize: ->
-      @keyboardManager ||= new Exo.KeyboardManager
-      super
-
     handleKeyDown: (key, e) ->
       switch key
-        when 'up', '⇧+up'
+        when "up", "⇧+up"
           @selectPrevious(e)
           e.preventDefault()
-        when 'down', '⇧+down'
+        when "down", "⇧+down"
           @selectNext(e)
           e.preventDefault()
+        when "tab", "⇧+tab"
+          if model = @getSelectedModels()[0]
+            @_modelSelected(model)
+            @hide()
         when "enter"
           if model = @getSelectedModels()[0]
             @_modelSelected(model)
             e.preventDefault()
             e.stopPropagation()
             @hide()
-            return false
 
     #
     # Private

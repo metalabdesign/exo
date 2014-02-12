@@ -9,7 +9,6 @@ namespace 'Exo.Views', (exports) ->
     minInputValueLength: 2
     allowSubmit: true
 
-    # Stupid idea?
     className: "token-field"
     selectedClassName: "selected"
     focusClassName: "focus"
@@ -170,7 +169,6 @@ namespace 'Exo.Views', (exports) ->
 
       @$input.addClass(@hiddenClass)
 
-      # TODO holy shit.. refactor this...
       if @selectedIndex != TokenField.TokenIndexes.Input && @selectedIndex != TokenField.TokenIndexes.All
         $(@tokens[@selectedIndex]).removeClass(@tokenSelectedClassName)
 
@@ -424,7 +422,7 @@ namespace 'Exo.Views', (exports) ->
     # Get the display text for a model by calling either `displayAttr` or by trying common display
     # text attributes
     _itemDisplayText: (item) ->
-      displayText   = item.displayAttr?()
+      displayText = item.displayAttr?()
 
       for attr in ["name", "title", "full_name", "email", "text", "query"]
         displayText ||= item.get(attr)

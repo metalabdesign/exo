@@ -4,9 +4,15 @@ namespace 'Exo.Views', (exports) ->
   class exports.AutocompleteTokenField extends Exo.Views.TokenField
     resultsPopoverClass: Exo.Views.CollectionListPopover
     showPopoverOnEmpty: false
+
     minInputValueLength: 1
+
+    # Allow tokens for queries not in the collection. Useful for creating.
     allowFallbackTokens: true
     showAllOnDownArrow: false
+
+    # Attribute on models to search.
+    filterAttribute: "name"
 
     initialize: (options = {}) ->
       super
@@ -28,9 +34,6 @@ namespace 'Exo.Views', (exports) ->
         _.extend {
           displayAttr: @_itemDisplayText(model)
         }, model.attributes
-
-      # Attribute to filter models by
-      @filterAttribute = options.filterAttribute || "name"
 
       @resultsPopover.on "item:selected", (model) ->
         model = if _.isString(model) then @_buildFallbackToken(model) else model

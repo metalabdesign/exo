@@ -20,13 +20,14 @@ namespace 'Exo', (exports) ->
           # Score models in sources against a passed in query if there is one,
           # otherwise return all models
           if query
-            score = exports.Extensions.String.score(model.get(@modelFilterAttr), query)
+            if attr = model.get(@modelFilterAttr)
+              score = exports.Extensions.String.score(attr, query)
 
-            if score > @threshold
-              results.push {
-                score: score
-                object: model
-              }
+              if score > @threshold
+                results.push {
+                  score: score
+                  object: model
+                }
           else
             results.push {
               score: null

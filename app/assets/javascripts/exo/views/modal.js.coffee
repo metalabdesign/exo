@@ -145,6 +145,8 @@ namespace 'Exo.Views', (exports) ->
           setHeight maxHeight
         else if @$sidebar.length || contentHeight == 0
           setHeight elHeight
+        else
+          @dimensions.height = elHeight
 
       else
         setHeight @height

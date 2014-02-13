@@ -107,6 +107,7 @@ namespace 'Exo.Views', (exports) ->
       @el.appendChild(@tokenContainer)
 
       @_renderCount = 1
+      @trigger("rendered")
       this
 
     insertToken: (tokens, options = {}) ->

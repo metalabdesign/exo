@@ -14,20 +14,23 @@ namespace 'Exo.Views', (exports) ->
     # Attribute on models to search.
     filterAttribute: "name"
 
+    resultsPopoverOptions: null
+
     initialize: (options = {}) ->
       super
 
       @resultsPopover = options.resultsPopover || new @resultsPopoverClass(
-        appendTo: @$el
-        target: @$el
-        tail: false
-        setupEvents: false
-        keyboardManager: @keyboardManager
-        position: {
-          my: "left top"
-          at: "left bottom"
-          collision: "none"
-        }
+        _.extend({
+          appendTo: @$el
+          target: @$el
+          tail: false
+          setupEvents: false
+          keyboardManager: @keyboardManager
+          position:
+            my: "left top"
+            at: "left bottom"
+            collision: "none"
+        }, @resultsPopoverOptions)
       )
 
       @resultsPopover.itemContext = (model) =>

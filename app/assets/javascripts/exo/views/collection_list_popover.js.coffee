@@ -31,6 +31,8 @@ namespace 'Exo.Views', (exports) ->
             e.stopPropagation()
             @hide()
 
+      return
+
     #
     # Private
     #

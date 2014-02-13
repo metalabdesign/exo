@@ -48,10 +48,8 @@ namespace 'Exo.Views', (exports) ->
         @$originalInput = $(@originalInput)
         @$originalInput.wrap(@el)
         @$originalInput.attr("type", "hidden")
-        @placeholderText ||= @$originalInput.attr("placeholder")
+        @placeholder ||= @$originalInput.attr("placeholder")
         @setElement @$originalInput.parents()[0]
-
-      @placeholderText ||= ""
 
       @selectedIndex = TokenField.TokenIndexes.Input
       @_collection = new Thorax.Collection

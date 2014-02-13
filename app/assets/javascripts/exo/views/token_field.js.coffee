@@ -394,7 +394,7 @@ namespace 'Exo.Views', (exports) ->
 
     _updatePlaceholder: ->
       if @inputPlaceholder
-        @inputPlaceholder.innerHTML = @placeholderText
+        @inputPlaceholder.innerHTML = @placeholder
 
     _toggleInputVisibility: ->
       exceeded = @_maxTokensExceeded()

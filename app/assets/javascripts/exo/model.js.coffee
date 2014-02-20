@@ -52,7 +52,7 @@ namespace 'Exo', (exports) ->
       else
         (attrs = {})[key] = val
 
-      # Intercept `set` calls to a registerd nested model, and call update on
+      # Intercept `set` calls to a registerd nested model, and call set on
       # it instead
       for attr, klass of (@embeddedResources || [])
         if attrs[attr] && @attributes[attr] instanceof klass
@@ -60,8 +60,7 @@ namespace 'Exo', (exports) ->
 
           if @attributes[attr] instanceof Backbone.Collection
             data = data.models if data instanceof Backbone.Collection
-            # TODO update -> set in Backbone 1.0
-            @attributes[attr].update(data, options)
+            @attributes[attr].set(data, options)
             delete attrs[attr]
           else
             if data instanceof Backbone.Model && data.id == @attributes[attr].id

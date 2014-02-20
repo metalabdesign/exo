@@ -1,7 +1,6 @@
 #= require ./popover
 namespace 'Exo.Views', (exports) ->
   class exports.CollectionListPopover extends Exo.Views.Popover
-    @mixins : ["selectable"]
     selectableSelector: ".collection-item"
 
     events:
@@ -11,6 +10,10 @@ namespace 'Exo.Views', (exports) ->
 
     name: "collection_list_popover"
     className: "collection-list-popover popover"
+
+    initialize: ->
+      @mixin "selectable"
+      super
 
     handleKeyDown: (key, e) ->
       switch key

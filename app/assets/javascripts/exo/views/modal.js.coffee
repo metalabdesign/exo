@@ -12,7 +12,7 @@ namespace 'Exo.Views', (exports) ->
     visible: false
     scrollable: true
     zIndex: 1024
-    destroyOnHide: false
+    releaseOnHide: false
     escToClose: true
 
     topOffset: 80
@@ -77,7 +77,7 @@ namespace 'Exo.Views', (exports) ->
       @$el.hide()
       @getOverlay().hide()
       @trigger "hide"
-      @destroy() if @destroyOnHide
+      @release() if @releaseOnHide
       this
 
     toggle: ->

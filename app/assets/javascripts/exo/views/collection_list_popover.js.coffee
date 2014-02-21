@@ -43,7 +43,7 @@ namespace 'Exo.Views', (exports) ->
       @trigger("item:selected", model)
 
     _itemClicked: (e) ->
-      cid = $(e.currentTarget).closest("li")[0].getAttribute("data-model-cid")
+      cid = e.currentTarget.getAttribute("data-model-cid")
       @_modelSelected(@collection.get(cid))
       @hide()
 

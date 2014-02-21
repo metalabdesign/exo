@@ -4,7 +4,6 @@ namespace 'Exo.Views', (exports) ->
     selectableSelector: ".collection-item"
 
     events:
-      "mousedown li" : "_itemClicked"
       "show" : "_nominateKeyboardManager"
       "hide" : "_revokeKeyboardManager"
 
@@ -13,6 +12,8 @@ namespace 'Exo.Views', (exports) ->
 
     initialize: ->
       @mixin "selectable"
+      @on "mousedown #{ @selectableSelector }", @_itemClicked, this
+
       super
 
     handleKeyDown: (key, e) ->
@@ -36,9 +37,7 @@ namespace 'Exo.Views', (exports) ->
 
       return
 
-    #
     # Private
-    #
 
     _modelSelected: (model) ->
       @trigger("item:selected", model)

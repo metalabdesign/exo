@@ -183,17 +183,18 @@ Thorax.View = Backbone.View.extend({
         throw new Error(createErrorMessage('nested-render'));
       }
 
-      self._previousHelpers = _.filter(self.children, function(child) {
-        return child._helperOptions;
-      });
-
-      var children = {};
+      var children = {},
+          previous = [];
       _.each(self.children, function(child, key) {
         if (!child._helperOptions) {
           children[key] = child;
+        } else {
+          child._cull = true;
+          previous.push(child);
         }
       });
       self.children = children;
+      self._previousHelpers = previous;
 
       self.trigger('before:rendered');
       self._rendering = true;
@@ -211,8 +212,10 @@ Thorax.View = Backbone.View.extend({
         }
 
         // Destroy any helpers that may be lingering
-        _.each(self._previousHelpers, function(child) {
-          self._removeChild(child);
+        _.each(previous, function(child) {
+          if (child._cull) {
+            self._removeChild(child);
+          }
         }, self);
         self._previousHelpers = undefined;
 
@@ -250,15 +253,16 @@ Thorax.View = Backbone.View.extend({
 
   renderTemplate: function(file, context, ignoreErrors) {
     var template;
-    context = context || this._getContext();
     if (_.isFunction(file)) {
       template = file;
     } else {
       template = Thorax.Util.getTemplate(file, ignoreErrors);
     }
-    if (!template) {
+    if (!template || template === Handlebars.VM.noop) {
       return '';
     } else {
+      context = context || this._getContext();
+
       return template(context, {
         helpers: this.helpers,
         data: this._getData(context)
@@ -493,12 +497,8 @@ function assignTemplate(attributeName, options) {
 // need an extra scope parameter, and will minify
 // better than _.result
 function getValue(object, prop, scope) {
-  if (!(object && object[prop])) {
-    return null;
-  }
-  return _.isFunction(object[prop])
-    ? object[prop].call(scope || object)
-    : object[prop];
+  prop = object && object[prop];
+  return prop && prop.call ? prop.call(scope || object) : prop;
 }
 
 var inheritVars = {};
@@ -530,7 +530,9 @@ function walkInheritTree(source, fieldName, isStatic, callback) {
     }
   } else {
     iterate = iterate.constructor;
-    while (iterate) {
+
+    // Iterate over all prototypes exclusive of the backbone view prototype
+    while (iterate && iterate.__super__) {
       if (iterate.prototype && _.has(iterate.prototype, fieldName)) {
         tree.push(iterate.prototype);
       }
@@ -1106,7 +1108,7 @@ Handlebars.registerViewHelper = function(name, ViewClass, callback) {
 
     // Check to see if we have an existing instance that we can reuse
     var instance = _.find(declaringView._previousHelpers, function(child) {
-      return compareHelperOptions(viewOptions, child);
+      return child._cull && compareHelperOptions(viewOptions, child);
     });
 
     // Create the instance if we don't already have one
@@ -1127,11 +1129,6 @@ Handlebars.registerViewHelper = function(name, ViewClass, callback) {
         throw new Error('insert-destroyed-factory');
       }
 
-      // Remove any possible entry in previous helpers in case this is a cached value returned from
-      // slightly different data that does not qualify for the previous helpers direct reuse.
-      // (i.e. when using an array that is modified between renders)
-      declaringView._previousHelpers = _.without(declaringView._previousHelpers, instance);
-
       args.push(instance);
       declaringView._addChild(instance);
       declaringView.trigger.apply(declaringView, ['helper', name].concat(args));
@@ -1143,8 +1140,18 @@ Handlebars.registerViewHelper = function(name, ViewClass, callback) {
         throw new Error('insert-destroyed');
       }
 
-      declaringView._previousHelpers = _.without(declaringView._previousHelpers, instance);
       declaringView.children[instance.cid] = instance;
+    }
+
+    // Remove any possible entry in previous helpers in case this is a cached value returned from
+    // slightly different data that does not qualify for the previous helpers direct reuse.
+    // (i.e. when using an array that is modified between renders)
+    instance._cull = false;
+
+    // Register the append helper if not already done
+    if (!declaringView._pendingAppend) {
+      declaringView._pendingAppend = true;
+      declaringView.once('append', helperAppend);
     }
 
     htmlAttributes[viewPlaceholderAttributeName] = instance.cid;
@@ -1157,7 +1164,9 @@ Handlebars.registerViewHelper = function(name, ViewClass, callback) {
   return helper;
 };
 
-Thorax.View.on('append', function(scope, callback) {
+function helperAppend(scope, callback) {
+  this._pendingAppend = undefined;
+
   (scope || this.$el).find('[' + viewPlaceholderAttributeName + ']').forEach(function(el) {
     var placeholderId = el.getAttribute(viewPlaceholderAttributeName),
         view = this.children[placeholderId];
@@ -1174,8 +1183,7 @@ Thorax.View.on('append', function(scope, callback) {
       callback && callback(view.el);
     }
   }, this);
-});
-
+}
 
 /**
  * Clones the helper options, dropping items that are known to change
@@ -1539,13 +1547,19 @@ Thorax.CollectionView = Thorax.View.extend({
   _replaceHTML: function(html) {
     if (this.collection && this.getObjectOptions(this.collection) && this._renderCount) {
       var element;
-      var oldCollectionElement = this.getCollectionElement();
+      var oldCollectionElement = this._collectionElement;
       element = _replaceHTML.call(this, html);
+
+      this._lookupCollectionElement();
+
       if (!oldCollectionElement.attr('data-view-cid')) {
-        this.getCollectionElement().replaceWith(oldCollectionElement);
+        this._collectionElement.replaceWith(oldCollectionElement);
       }
     } else {
-      return _replaceHTML.call(this, html);
+      var ret = _replaceHTML.call(this, html);
+      this._lookupCollectionElement();
+
+      return ret;
     }
   },
 
@@ -1567,7 +1581,7 @@ Thorax.CollectionView = Thorax.View.extend({
       return;
     }
     var itemView,
-        $el = this.getCollectionElement(),
+        $el = this._collectionElement,
         collection = this.collection;
     options = _.defaults(options || {}, {
       filter: true
@@ -1632,7 +1646,7 @@ Thorax.CollectionView = Thorax.View.extend({
   // updateItem only useful if there is no item view, otherwise
   // itemView.render() provides the same functionality
   updateItem: function(model) {
-    var $el = this.getCollectionElement(),
+    var $el = this._collectionElement,
         viewEl = $el.find('[' + modelCidAttributeName + '="' + model.cid + '"]');
 
     // NOP For views
@@ -1647,7 +1661,7 @@ Thorax.CollectionView = Thorax.View.extend({
   removeItem: function(model) {
     var viewEl = model;
     if (model.cid) {
-      var $el = this.getCollectionElement();
+      var $el = this._collectionElement;
       viewEl = $el.find('[' + modelCidAttributeName + '="' + model.cid + '"]');
     }
     if (!viewEl.length) {
@@ -1745,7 +1759,7 @@ Thorax.CollectionView = Thorax.View.extend({
     return model.attributes;
   },
   appendEmpty: function() {
-    var $el = this.getCollectionElement();
+    var $el = this._collectionElement;
     $el.empty();
 
     // Using call here to avoid v8 prototype inline optimization bug that helper views
@@ -1759,8 +1773,11 @@ Thorax.CollectionView = Thorax.View.extend({
     this.trigger('rendered:empty', this, this.collection);
   },
   getCollectionElement: function() {
-    var element = this.$(this._collectionSelector);
-    return element.length === 0 ? this.$el : element;
+    return this._collectionElement;
+  },
+  _lookupCollectionElement: function() {
+    var $collectionElement = this.$(this._collectionSelector);
+    this._collectionElement = $collectionElement.length ? $collectionElement : this.$el;
   },
 
   updateFilter: function() {
@@ -1780,7 +1797,7 @@ Thorax.CollectionView.on({
       applyItemVisiblityFilter.call(this, model);
     },
     add: function(model) {
-      var $el = this.getCollectionElement();
+      var $el = this._collectionElement;
       if ($el.length) {
         if (this.collection.length === 1) {
           handleChangeFromEmptyToNotEmpty.call(this);
@@ -1791,7 +1808,7 @@ Thorax.CollectionView.on({
       }
     },
     remove: function(model) {
-      var $el = this.getCollectionElement();
+      var $el = this._collectionElement;
       this.removeItem(model);
       this.collection.length === 0 && $el.length && handleChangeFromNotEmptyToEmpty.call(this);
     }
@@ -1838,7 +1855,7 @@ function applyVisibilityFilter() {
 }
 
 function applyItemVisiblityFilter(model) {
-  var $el = this.getCollectionElement();
+  var $el = this._collectionElement;
   this.itemFilter && $el.find('[' + modelCidAttributeName + '="' + model.cid + '"]')[itemShouldBeVisible.call(this, model) ? 'show' : 'hide']();
 }
 
@@ -1850,14 +1867,14 @@ function itemShouldBeVisible(model) {
 }
 
 function handleChangeFromEmptyToNotEmpty() {
-  var $el = this.getCollectionElement();
+  var $el = this._collectionElement;
   this.emptyClass && $el.removeClass(this.emptyClass);
   $el.removeAttr(collectionEmptyAttributeName);
   $el.empty();
 }
 
 function handleChangeFromNotEmptyToEmpty() {
-  var $el = this.getCollectionElement();
+  var $el = this._collectionElement;
   this.emptyClass && $el.addClass(this.emptyClass);
   $el.attr(collectionEmptyAttributeName, true);
   this.appendEmpty();
@@ -2210,10 +2227,12 @@ Thorax.LayoutView = Thorax.View.extend({
     append = _.bind(function() {
       if (view) {
         view.ensureRendered();
+        options.activating = view;
+
         triggerLifecycleEvent.call(this, 'activated', options);
         view.trigger('activated', options);
         this._view = view;
-        var targetElement = getLayoutViewsTargetElement.call(this);
+        var targetElement = this._layoutViewEl;
         this._view.appendTo(targetElement);
         this._addChild(view);
       } else {
@@ -2262,19 +2281,20 @@ function triggerLifecycleEvent(eventName, options) {
 }
 
 function ensureLayoutCid() {
-  ++this._renderCount;
   //set the layoutCidAttributeName on this.$el if there was no template
   this.$el.attr(layoutCidAttributeName, this.cid);
+  this._layoutViewEl = this.el;
 }
 
 function ensureLayoutViewsTargetElement() {
-  if (!this.$('[' + layoutCidAttributeName + '="' + this.cid + '"]')[0]) {
+  var el = this.$('[' + layoutCidAttributeName + '="' + this.cid + '"]')[0];
+  if (!el && this.$el.attr(layoutCidAttributeName)) {
+    el = this.el;
+  }
+  if (!el) {
     throw new Error('No layout element found in ' + (this.name || this.cid));
   }
-}
-
-function getLayoutViewsTargetElement() {
-  return this.$('[' + layoutCidAttributeName + '="' + this.cid + '"]')[0] || this.el[0] || this.el;
+  this._layoutViewEl = el;
 }
 
 ;;

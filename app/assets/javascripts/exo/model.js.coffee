@@ -73,10 +73,10 @@ namespace 'Exo', (exports) ->
 
       super(attrs, options)
 
-    parse: (resp) ->
+    parse: (resp, options) ->
       if resp # PATCH requests return an empty response
         for attr, klass of (@embeddedResources || [])
           data = resp[attr]
-          resp[attr] = new klass(data, parse: true)
+          resp[attr] = new klass(data, options)
 
       super(resp)

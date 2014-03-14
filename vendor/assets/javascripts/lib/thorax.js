@@ -23,7 +23,21 @@ DEALINGS IN THE SOFTWARE.
 ;;
 (function() {
 
-/*global cloneInheritVars, createInheritVars, resetInheritVars, createRegistryWrapper, getValue, inheritVars, createErrorMessage, assignTemplate */
+/*global
+    Thorax:true,
+    $serverSide,
+    assignTemplate, createErrorMessage, createInheritVars, createRegistryWrapper, getValue,
+    inheritVars, resetInheritVars,
+    ServerMarshal
+*/
+
+// Provide default behavior for client-failover
+if (typeof $serverSide === 'undefined') {
+  window.$serverSide = false;
+}
+
+var isIE11 = !!navigator.userAgent.match(/Trident\/7\./);
+var isIE = isIE11 || (/msie [\w.]+/).exec(navigator.userAgent.toLowerCase());
 
 //support zepto.forEach on jQuery
 if (!$.fn.forEach) {
@@ -143,7 +157,7 @@ Thorax.View = Backbone.View.extend({
     return view;
   },
 
-  _destroy: function(options) {
+  _destroy: function() {
     _.each(this._boundDataObjectsByCid, this.unbindDataObject, this);
     this.trigger('destroyed');
     delete viewsIndexedByCid[this.cid];
@@ -156,6 +170,8 @@ Thorax.View = Backbone.View.extend({
       this.undelegateEvents();
       this.remove();  // Will call stopListening()
       this.off();     // Kills off remaining events
+
+      ServerMarshal.destroy(this.$el);
     }
 
     // Absolute worst case scenario, kill off some known fields to minimize the impact
@@ -291,9 +307,8 @@ Thorax.View = Backbone.View.extend({
 
   html: function(html) {
     if (_.isUndefined(html)) {
-      return this.el.innerHTML;
+      return this.$el.html();
     } else {
-      // Event for IE element fixes
       this.trigger('before:append');
       var element = this._replaceHTML(html);
       this.trigger('append');
@@ -317,7 +332,17 @@ Thorax.View = Backbone.View.extend({
   },
 
   _replaceHTML: function(html) {
-    this.el.innerHTML = '';
+    // We want to pull our elements out of the tree if we are under jQuery
+    // or IE as both have the tendancy to mangle the elements we want to reuse
+    // on cleanup. This could leak event binds if users are performing custom binds
+    // but this generally not recommended.
+    if (this._renderCount && (isIE || $.fn.jquery)) {
+      while (this.el.hasChildNodes()) {
+        this.el.removeChild(this.el.childNodes[0]);
+      }
+    }
+
+    this.$el.empty();
     return this.$el.append(html);
   },
 
@@ -368,7 +393,9 @@ function configureView () {
 
   //this.options is removed in Thorax.View, we merge passed
   //properties directly with the view and template context
-  _.extend(this, options || {});
+  if (options) {
+    _.extend(this, options);
+  }
 
   // Setup helpers
   bindHelpers.call(this);
@@ -406,13 +433,24 @@ $.fn.view = function(options) {
     selector += ':not([' + viewHelperAttributeName + '])';
   }
   var el = $(this).closest(selector);
-  return (el && viewsIndexedByCid[el.attr(viewCidAttributeName)]) || false;
+  if (el) {
+    return options.el ? el : viewsIndexedByCid[el.attr(viewCidAttributeName)];
+  } else {
+    return false;
+  }
 };
 
 ;;
-/*global createRegistryWrapper:true, cloneEvents: true */
+/*global createRegistryWrapper:true, getEventCallback */
+
 function createErrorMessage(code) {
   return 'Error "' + code + '". For more information visit http://thoraxjs.org/error-codes.html' + '#' + code;
+}
+function createError(code, info) {
+  var error = new Error(createErrorMessage(code));
+  error.name = code;
+  error.info = info;
+  return error;
 }
 
 function createRegistryWrapper(klass, hash) {
@@ -517,6 +555,7 @@ function resetInheritVars(self) {
   });
 }
 function walkInheritTree(source, fieldName, isStatic, callback) {
+  /*jshint boss:true */
   var tree = [];
   if (_.has(source, fieldName)) {
     tree.push(source);
@@ -642,7 +681,7 @@ function isVoidTag(tag) {
   }
 
   return voidTags[tag];
-};
+}
 
 Thorax.Util = {
   getViewInstance: function(name, attributes) {
@@ -689,6 +728,8 @@ Thorax.Util = {
     return _.isObject(obj) && ('length' in obj);
   },
   expandToken: function(input, scope, encode) {
+    /*jshint boss:true */
+
     if (input && input.indexOf && input.indexOf('{{') >= 0) {
       var re = /(?:\{?[^{]+)|(?:\{\{([^}]+)\}\})/g,
           match,
@@ -760,6 +801,163 @@ Thorax.Util = {
     }
   }
 };
+
+;;
+/*global $serverSide, createError, onEmit */
+var _thoraxServerData = window._thoraxServerData || [];
+
+/*
+ * Allows for complex data to be communicated between the server and client
+ * contexts for an arbitrary element.
+ *
+ * This is primarily intended for resolving template associated data on the client
+ * but any data can be expressed via simple paths from a known root object, such
+ * as a view instance or it's rendering context, may be marshaled.
+ */
+var ServerMarshal = Thorax.ServerMarshal = {
+  store: function($el, name, attributes, attributeIds, options) {
+    if (!$serverSide) {
+      return;
+    }
+
+    attributeIds = attributeIds || {};
+    options = options || {};
+
+    var contextPath = options.data && options.data.contextPath;
+
+    // Find or create the lookup table element
+    var elementCacheId = $el._serverData || parseInt($el.attr('data-server-data'), 10);
+    if (isNaN(elementCacheId)) {
+      elementCacheId = _thoraxServerData.length;
+      _thoraxServerData[elementCacheId] = {};
+
+      $el._serverData = elementCacheId;
+      $el.attr('data-server-data', elementCacheId);
+    }
+
+    var cache = _thoraxServerData[elementCacheId];
+    cache[name] = undefined;
+
+    // Store whatever data that we have
+    if (_.isArray(attributes) && !_.isString(attributeIds) && !attributes.toJSON) {
+      if (attributes.length) {
+        cache[name] = _.map(attributes, function(value, key) {
+          return lookupValue(value, attributeIds[key], contextPath);
+        });
+      }
+    } else if (_.isObject(attributes) && !_.isString(attributeIds) && !attributes.toJSON) {
+      var stored = {},
+          valueSet;
+      _.each(attributes, function(value, key) {
+        stored[key] = lookupValue(value, attributeIds[key], contextPath);
+        valueSet = true;
+      });
+      if (valueSet) {
+        cache[name] = stored;
+      }
+    } else {
+      // We were passed a singular value (attributeId is a simple id value)
+      cache[name] = lookupValue(attributes, attributeIds, contextPath);
+    }
+  },
+  load: function(el, name, parentView, context) {
+    var elementCacheId = parseInt(el.getAttribute('data-server-data'), 0),
+        cache = _thoraxServerData[elementCacheId];
+    if (!cache) {
+      return;
+    }
+
+    function resolve(value) {
+      return (value && value.$lut != null) ? lookupField(parentView, context, value.$lut) : value;
+    }
+
+    cache = cache[name];
+    if (_.isArray(cache)) {
+      return _.map(cache, resolve);
+    } else if (!_.isFunction(cache) && _.isObject(cache) && cache.$lut == null) {
+      var ret = {};
+      _.each(cache, function(value, key) {
+        ret[key] = resolve(value);
+      });
+      return ret;
+    } else {
+      return resolve(cache);
+    }
+  },
+
+  serialize: function() {
+    if ($serverSide) {
+      return JSON.stringify(_thoraxServerData);
+    }
+  },
+
+  destroy: function($el) {
+    /*jshint -W035 */
+    var elementCacheId = parseInt($el.attr('data-server-data'), 10);
+    if (!isNaN(elementCacheId)) {
+      _thoraxServerData[elementCacheId] = undefined;
+
+      // Reclaim whatever slots that we can. This ensures a smaller output structure while avoiding
+      // conflicts that may occur when operating in a shared environment.
+      var len = _thoraxServerData.length;
+      while (len-- && !_thoraxServerData[len]) { /* NOP */ }
+      if (len < _thoraxServerData.length - 1) {
+        _thoraxServerData.length = len + 1;
+      }
+    }
+  },
+
+  _reset: function() {
+    // Intended for tests only
+    _thoraxServerData = [];
+  }
+};
+
+// Register a callback to output our content from the server implementation.
+if ($serverSide) {
+  onEmit(function() {
+    $('body').append('<script>var _thoraxServerData = ' + ServerMarshal.serialize() + ';</script>');
+  });
+}
+
+/*
+ * Walks a given parent or context scope, attempting to resolve a dot
+ * separated path.
+ *
+ * The parent context is given priority.
+ */
+function lookupField(parent, context, fieldName) {
+  function lookup(context) {
+    for (var i = 0; context && i < components.length; i++) {
+      if (components[i] !== '' && components[i] !== '.' && components[i] !== 'this') {
+        context = context[components[i]];
+      }
+    }
+    return context;
+  }
+
+  var components = fieldName.split('.');
+  return lookup(context) || lookup(parent);
+}
+
+/*
+ * Determines the value to be saved in the lookup table to be restored on the client.
+ */
+function lookupValue(value, lutKey, contextPath) {
+  if (_.isString(value) || _.isNumber(value) || _.isNull(value) || _.isBoolean(value)) {
+    return value;
+  } else if (lutKey != null && lutKey !== true && !/^\.\.\//.test(lutKey)) {
+    // This is an object what has a path associated with it so we should hopefully
+    // be able to resolve it on the client.
+    return {
+      $lut: Handlebars.Utils.appendContextPath(contextPath, lutKey)
+    };
+  } else {
+    // This is some sort of unsuppored object type or a depthed reference (../foo)
+    // which is not supported.
+    throw createError('server-marshall-object');
+  }
+}
 
 ;;
 Thorax.Mixins = {};
@@ -998,7 +1196,7 @@ function eventParamsFromEventItem(name, handler, context) {
 }
 
 ;;
-/*global getOptionsData, normalizeHTMLAttributeOptions, viewHelperAttributeName */
+/*global ServerMarshal, $serverSide, getOptionsData, normalizeHTMLAttributeOptions, viewHelperAttributeName */
 var viewPlaceholderAttributeName = 'data-view-tmp',
     viewTemplateOverrides = {};
 
@@ -1129,6 +1327,23 @@ Handlebars.registerViewHelper = function(name, ViewClass, callback) {
         throw new Error('insert-destroyed-factory');
       }
 
+      instance.$el.attr('data-view-helper-restore', name);
+
+      if ($serverSide) {
+        try {
+          ServerMarshal.store(instance.$el, 'args', args, options.ids, options);
+          ServerMarshal.store(instance.$el, 'attrs', options.hash, options.hashIds, options);
+          if (options.fn && options.fn !== Handlebars.VM.noop) {
+            ServerMarshal.store(instance.$el, 'fn', options.fn.program);
+          }
+          if (options.inverse && options.inverse !== Handlebars.VM.noop) {
+            ServerMarshal.store(instance.$el, 'inverse', options.inverse.program);
+          }
+        } catch (err) {
+          instance.$el.attr('data-view-server', 'false');
+        }
+      }
+
       args.push(instance);
       declaringView._addChild(instance);
       declaringView.trigger.apply(declaringView, ['helper', name].concat(args));
@@ -1244,7 +1459,7 @@ function compareHelperOptions(a, b) {
 }
 
 ;;
-/*global getValue, inheritVars, walkInheritTree */
+/*global getValue, inheritVars, listenTo, walkInheritTree */
 
 function dataObject(type, spec) {
   spec = inheritVars[type] = _.defaults({
@@ -1377,6 +1592,8 @@ Thorax.Model = Backbone.Model.extend({
     return !this.isPopulated();
   },
   isPopulated: function() {
+    /*jshint -W089 */
+
     // We are populated if we have attributes set
     var attributes = _.clone(this.attributes),
         defaults = getValue(this, 'defaults') || {};
@@ -1435,7 +1652,7 @@ Thorax.View.on({
         this.trigger('invalid', errors, model);
       }
     },
-    error: function(model, resp, options) {
+    error: function(model, resp /*, options */) {
       this.trigger('error', resp, model);
     },
     change: function(model, options) {
@@ -1463,7 +1680,7 @@ $.fn.model = function(view) {
 };
 
 ;;
-/*global assignView, assignTemplate, createRegistryWrapper, dataObject, getEventCallback, getValue, modelCidAttributeName, viewCidAttributeName */
+/*global assignView, assignTemplate, createRegistryWrapper, dataObject, getValue, modelCidAttributeName, viewCidAttributeName */
 var _fetch = Backbone.Collection.prototype.fetch,
     _set = Backbone.Collection.prototype.set,
     _replaceHTML = Thorax.View.prototype._replaceHTML,
@@ -1822,7 +2039,7 @@ Thorax.View.on({
         this.trigger('invalid', message, collection);
       }
     },
-    error: function(collection, resp, options) {
+    error: function(collection, resp /*, options */) {
       this.trigger('error', resp, collection);
     }
   }
@@ -2054,7 +2271,10 @@ _.extend(Thorax.View.prototype, {
   _getInputValue: function(input /* , options, errors */) {
     if (input.type === 'checkbox' || input.type === 'radio') {
       if (input.checked) {
-        return input.getAttribute('value') || true;
+        // Under older versions of IE we see 'on' when no value is set so we want to cast this
+        // to true.
+        var value = input.getAttribute('value');
+        return (value === 'on') || value || true;
       }
     } else if (input.multiple === true) {
       var values = [];
@@ -2178,6 +2398,7 @@ function objectAndKeyFromAttributesAndName(attributes, name, options, callback) 
 
 function resetSubmitState() {
   this.$('form').removeAttr('data-submit-wait');
+  this.$el.removeAttr('data-submit-wait');
 }
 
 function populateOptions(view) {
@@ -2218,7 +2439,7 @@ Thorax.LayoutView = Thorax.View.extend({
 
     remove = _.bind(function() {
       if (oldView) {
-        oldView.$el && oldView.$el.remove();
+        oldView.$el && oldView.$el.detach();
         triggerLifecycleEvent.call(oldView, 'deactivated', options);
         this._removeChild(oldView);
       }
@@ -2298,7 +2519,10 @@ function ensureLayoutViewsTargetElement() {
 }
 
 ;;
-/* global createErrorMessage */
+/* global
+    collectionElementAttributeName, createErrorMessage, getOptionsData, getParent,
+    helperViewPrototype, normalizeHTMLAttributeOptions
+*/
 
 Thorax.CollectionHelperView = Thorax.CollectionView.extend({
   // Forward render events to the parent
@@ -2455,6 +2679,7 @@ Handlebars.registerHelper('collection-element', function(options) {
 });
 
 ;;
+/*global getOptionsData */
 Handlebars.registerHelper('empty', function(dataObject, options) {
   if (arguments.length === 1) {
     options = dataObject;
@@ -2489,6 +2714,7 @@ Handlebars.registerHelper('empty', function(dataObject, options) {
 });
 
 ;;
+/*global getOptionsData */
 Handlebars.registerHelper('template', function(name, options) {
   var context = _.extend({fn: options && options.fn}, this, options ? options.hash : {});
   var output = getOptionsData(options).view.renderTemplate(name, context);
@@ -2557,7 +2783,7 @@ Handlebars.registerViewHelper('view', {
 });
 
 ;;
-/* global createErrorMessage */
+/* global createErrorMessage, normalizeHTMLAttributeOptions */
 
 var callMethodAttributeName = 'data-call-method',
     triggerEventAttributeName = 'data-trigger-event';
@@ -2634,6 +2860,7 @@ $(document).ready(function() {
 });
 
 ;;
+/*global getOptionsData, normalizeHTMLAttributeOptions */
 var elementPlaceholderAttributeName = 'data-element-tmp';
 
 Handlebars.registerHelper('element', function(element, options) {
@@ -2661,7 +2888,7 @@ Thorax.View.on('append', function(scope, callback) {
 });
 
 ;;
-/* global createErrorMessage */
+/* global createErrorMessage, getOptionsData */
 
 Handlebars.registerHelper('super', function(options) {
   var declaringView = getOptionsData(options).view,
@@ -2684,7 +2911,7 @@ Handlebars.registerHelper('super', function(options) {
 });
 
 ;;
-/*global collectionOptionNames, inheritVars, createErrorMessage */
+/*global createErrorMessage, inheritVars */
 
 var loadStart = 'load:start',
     loadEnd = 'load:end',
@@ -2756,7 +2983,9 @@ Thorax.loadHandler = function(start, end, context) {
 
     loadInfo.events.push(object);
 
-    object.on(loadEnd, function endCallback() {
+    // Must be defined as a variable rather than a named function as a parameter as oldIE
+    // isn't able to properly remove the callback when using that syntax
+    var endCallback = function() {
       var loadingEndTimeout = self._loadingTimeoutEndDuration;
       if (loadingEndTimeout === void 0) {
         // If we are running on a non-view object pull the default timeout
@@ -2792,7 +3021,8 @@ Thorax.loadHandler = function(start, end, context) {
           }),
         loadingEndTimeout * 1000);
       }
-    });
+    };
+    object.on(loadEnd, endCallback);
   };
 };
 
@@ -2843,7 +3073,7 @@ Thorax.mixinLoadable = function(target, useParent) {
         rootObject.trigger(loadStart, message, background, object);
       }
       that._isLoading = true;
-      $(that.el).addClass(that._loadingClassName);
+      that.$el.addClass(that._loadingClassName);
       // used by loading helpers
       that.trigger('change:load-state', 'start', background);
     },
@@ -2856,7 +3086,7 @@ Thorax.mixinLoadable = function(target, useParent) {
       }
 
       that._isLoading = false;
-      $(that.el).removeClass(that._loadingClassName);
+      that.$el.removeClass(that._loadingClassName);
       // used by loading helper
       that.trigger('change:load-state', 'end');
     }
@@ -3187,6 +3417,7 @@ Thorax.View.on({
 });
 
 ;;
+/*global getOptionsData */
 Handlebars.registerHelper('loading', function(options) {
   var view = getOptionsData(options).view;
   view.off('change:load-state', onLoadStateChange, view);
@@ -3197,57 +3428,7 @@ Handlebars.registerHelper('loading', function(options) {
 function onLoadStateChange() {
   this.render();
 }
-;;
-/*global _replaceHTML */
-var isIE = (/msie [\w.]+/).exec(navigator.userAgent.toLowerCase());
-var isIE11 = !!navigator.userAgent.match(/Trident\/7\./);
 
-if (isIE) {
-  // IE will lose a reference to the elements if view.el.innerHTML = '';
-  // If they are removed one by one the references are not lost.
-  // For instance a view's childrens' `el`s will be lost if the view
-  // sets it's `el.innerHTML`.
-  Thorax.View.on('before:append', function() {
-    // note that detach is not available in Zepto,
-    // but IE should never run with Zepto
-    if (this._renderCount > 0) {
-      _.each(this._elementsByCid, function(element) {
-        $(element).detach();
-      });
-      _.each(this.children, function(child) {
-        child.$el.detach();
-      });
-    }
-  });
-}
-
-if (isIE || isIE11) {
-  // Once nodes are detached their innerHTML gets nuked in IE
-  // so create a deep clone. This method is identical to the
-  // main implementation except for ".clone(true, true)" which
-  // will perform a deep clone with events and data
-  Thorax.CollectionView.prototype._replaceHTML = function(html) {
-    if (this.getObjectOptions(this.collection) && this._renderCount) {
-      var element;
-      var oldCollectionElement = this.getCollectionElement().clone(true, true);
-      element = _replaceHTML.call(this, html);
-      if (!oldCollectionElement.attr('data-view-cid')) {
-        this.getCollectionElement().replaceWith(oldCollectionElement);
-      }
-    } else {
-      return _replaceHTML.call(this, html);
-    }
-  };
-
-  // IEs 9, 10 and 11 will lose references to nested views if view.el.innerHTML = '';
-  // Fixes issue #296 - see https://github.com/walmartlabs/thorax/issues/296 
-  Thorax.View.prototype._replaceHTML = function(html) {
-    while (this.el.hasChildNodes()) {
-      this.el.removeChild(this.el.childNodes[0]);
-    }
-    return this.$el.append(html);
-  };
-}
 ;;
 
 

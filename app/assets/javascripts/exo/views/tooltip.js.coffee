@@ -7,6 +7,7 @@ namespace 'Exo.Views', (exports) ->
     width: null
     height: "auto"
     allowHoverOnTooltip: true
+    hoverDelay: 0
     appendTo: document.body
     setupEvents: true
 
@@ -41,14 +42,20 @@ namespace 'Exo.Views', (exports) ->
     _setupEvents: ->
       @$target.on "mouseenter.popover-#{@cid}", (e) =>
         e.preventDefault()
-        @show()
+        @_tooltipHoverDelayTimeout = setTimeout =>
+          @show()
+        , @hoverDelay
 
       @$target.on "mouseleave.popover-#{@cid}", (e) =>
+        clearTimeout @_tooltipHoverDelayTimeout
+
         if !@allowHoverOnTooltip || (e.toElement != @$el[0] && !$(e.toElement).closest(@el).length)
           @hide()
 
       if @allowHoverOnTooltip
         @$el.on "mouseleave.popover-#{@cid}", (e) =>
+          clearTimeout @_tooltipHoverDelayTimeout
+
           if (e.toElement != @$el[0] && !$(e.toElement).closest(@el).length)
             @hide()
 

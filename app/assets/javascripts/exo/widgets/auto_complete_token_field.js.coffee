@@ -21,6 +21,8 @@ namespace 'Exo.Widgets.AutocompleteTokenField', (exports) ->
   exports.NestedAttributesStrategy = (tokens) ->
     token = tokens[0]
 
+    if !token
+      return @originalInput.value = ""
 
     if !token.isNew()
       # If token is an existing object than convert nested attributes to ID attribute instead

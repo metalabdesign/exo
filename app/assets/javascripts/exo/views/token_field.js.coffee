@@ -138,8 +138,8 @@ namespace 'Exo.Views', (exports) ->
           @deleteTokenAtIndex(index, true)
 
     # Clears any existing tokens and inserts passed in tokens
-    setToken: (tokens) ->
-      @deleteAll()
+    setToken: (tokens, options = {}) ->
+      @deleteAll(options)
       @insertToken(tokens)
 
     selectPreviousToken: ->
@@ -208,11 +208,11 @@ namespace 'Exo.Views', (exports) ->
         @_updateInput()
         @_toggleInputVisibility()
 
-    deleteAll: ->
+    deleteAll: (options = {}) ->
       @selectTokenAtIndex(TokenField.TokenIndexes.Input)
       $(@tokenContainer).children().remove(".#{@tokenClassName}")
 
-      @_collection.reset()
+      @_collection.reset([], options)
       @tokens = []
 
       @_updateInput()

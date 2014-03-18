@@ -123,8 +123,8 @@ namespace 'Exo.Views', (exports) ->
         #unless @_collection.include(token.model)
         unless @_tokenExists(token.model)
           @tokenContainer.insertBefore(token.element, @tokenInput)
-          @tokens.push token.element
-          @_collection.add token.model, options
+          @tokens.push(token.element)
+          @_collection.add(token.model, options)
 
       @_updateInput()
       @_toggleInputVisibility()
@@ -135,12 +135,18 @@ namespace 'Exo.Views', (exports) ->
       for token in tokens
         index = @_collection.models.indexOf token
         if index != -1
-          @deleteTokenAtIndex(index, true)
+          @deleteTokenAtIndex(index, deselect: true)
 
     # Clears any existing tokens and inserts passed in tokens
-    setToken: (tokens, options = {}) ->
+    setTokens: (tokens, options = {}) ->
       @deleteAll(options)
-      @insertToken(tokens)
+      @insertToken(tokens, options)
+
+    # Clears any existing tokens and inserts passed in tokens
+    #
+    # @depreciated in favour or setTokens
+    setToken: (tokens, options = {}) ->
+      @setTokens(tokens, options)
 
     selectPreviousToken: ->
       if @selectedIndex == 0
@@ -192,13 +198,13 @@ namespace 'Exo.Views', (exports) ->
         if token == object
           return @selectTokenAtIndex(index)
 
-    deleteTokenAtIndex: (index, deselect) ->
+    deleteTokenAtIndex: (index, options = {}) ->
       if index < @_collection.length
         token = @_collection.at(index)
         node = @tokens.splice(index, 1)[0]
         @tokenContainer.removeChild(node)
-        @_collection.remove(token)
-        if !deselect
+        @_collection.remove(token, options)
+        if !options.deselect
           @selectedIndex = TokenField.TokenIndexes.Input
           if index >= @_collection.length
             @selectTokenAtIndex(TokenField.TokenIndexes.Input)
@@ -352,7 +358,7 @@ namespace 'Exo.Views', (exports) ->
       # Wut?
       return if (index = @_getNodeIndex(target)) < 0
 
-      @deleteTokenAtIndex(index, true)
+      @deleteTokenAtIndex(index, deselect: true)
 
       if @_collection.length == 0
         @selectedIndex = TokenField.TokenIndexes.Input
@@ -385,7 +391,7 @@ namespace 'Exo.Views', (exports) ->
 
     _keyPressed: (e) ->
       if @selectedIndex != TokenField.TokenIndexes.Input
-        @deleteTokenAtIndex(@selectedIndex, true)
+        @deleteTokenAtIndex(@selectedIndex, deselect: true)
         @selectedIndex = TokenField.TokenIndexes.Input
         @selectTokenAtIndex(TokenField.TokenIndexes.Input)
 

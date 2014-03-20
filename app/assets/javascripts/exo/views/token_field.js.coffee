@@ -120,7 +120,6 @@ namespace 'Exo.Views', (exports) ->
       for token in tokens
         token = @_buildToken(token)
 
-        #unless @_collection.include(token.model)
         unless @_tokenExists(token.model)
           @tokenContainer.insertBefore(token.element, @tokenInput)
           @tokens.push(token.element)

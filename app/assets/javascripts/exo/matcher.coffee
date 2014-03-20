@@ -4,12 +4,11 @@ namespace 'Exo', (exports) ->
   class exports.Matcher
     constructor: (options = {}) ->
       options = _.defaults(options, threshold: 0.2)
-      @results = new Exo.ArrayController()
-      @results.comparator = null
       @sources = []
       @threshold = options.threshold
       @modelFilterAttr = options.filterAttribute || "name"
 
+    # @returns {Array.<Object>}
     resultsForString: (query, callback) ->
       results = []
 
@@ -26,21 +25,19 @@ namespace 'Exo', (exports) ->
               if score > @threshold
                 results.push {
                   score: score
-                  object: model
+                  model: model
                 }
           else
             results.push {
               score: null
-              object: model
+              model: model
             }
 
         continue
 
-      # Sort result objects by score, then pluck and return just the model
+      # Sort result objects by score before returning
       results.sort((a,b) -> b.score - a.score)
-      results = _.pluck(results, "object")
-      @results.reset results
-      callback(@results)
+      callback(results)
 
     addSource: (source) ->
       @sources.push(source)

@@ -105,6 +105,15 @@ namespace 'Exo.Views', (exports) ->
       else
         false
 
+    # Should we append a fallback token item to the results collection?
+    #
+    # By default, we will *not* if the token already exists in the token field
+    # or if the query resulted in a perfect match with an existing option.
+    #
+    # @returns {boolean}
+    _shouldAddFallbackToken: (model, results) ->
+      !@_tokenExists(model) && !(results[0]?.score == 1.0)
+
     _queryEntered: (query) ->
       if @_shouldShowResultsPopover(query)
         @_showResultsPopover(query)
@@ -113,17 +122,19 @@ namespace 'Exo.Views', (exports) ->
 
     _showResultsPopover: _.debounce((query) ->
       @matcher.resultsForString query, (results) =>
-        resultsCollection = new Thorax.Collection(results.array)
+        models = _.pluck(results, "model")
+        collection = new Thorax.Collection(models)
 
         # Don't show tokens in the results collection that already exist in the token field
-        resultsCollection.remove(@_collection.models)
+        collection.remove(@_collection.models)
 
         if @allowFallbackTokens
           # Insert a 'fallback' token for the currently entered query which the user can select
           # if they wish to create a new item rather than using an exsting one
-          resultsCollection.add(@_buildFallbackToken(query))
+          fallbackModel = @_buildFallbackToken(query)
+          collection.add(fallbackModel) if @_shouldAddFallbackToken(fallbackModel, results)
 
-        @resultsPopover.setCollection(resultsCollection)
+        @resultsPopover.setCollection(collection)
         @resultsPopover.selectAtIndex(0)
         @resultsPopover.show()
     , 25)

@@ -7,9 +7,10 @@ namespace 'Exo', (exports) ->
       @sources = []
       @threshold = options.threshold
       @modelFilterAttr = options.filterAttribute || "name"
+      this
 
     # @returns {Array.<Object>}
-    resultsForString: (query, callback) ->
+    resultsForString: (query, callback) =>
       results = []
 
       for source in @sources
@@ -23,20 +24,18 @@ namespace 'Exo', (exports) ->
               score = exports.Extensions.String.score(attr, query)
 
               if score > @threshold
-                results.push {
+                results.push
                   score: score
                   model: model
-                }
           else
-            results.push {
+            results.push
               score: null
               model: model
-            }
 
         continue
 
       # Sort result objects by score before returning
-      results.sort((a,b) -> b.score - a.score)
+      results.sort((a, b) -> b.score - a.score)
       callback(results)
 
     addSource: (source) ->

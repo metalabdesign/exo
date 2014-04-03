@@ -1,6 +1,8 @@
 namespace 'Exo', (exports) ->
   keyboardManager = class exports.KeyboardManager
 
+    cid = 0
+
     _map = {
       8: 'backspace'
       9: 'tab'
@@ -62,7 +64,7 @@ namespace 'Exo', (exports) ->
 
     constructor: (@el = null) ->
       @_responders = []
-      @cid = _.uniqueId("k")
+      @cid = "k" + cid++
 
       @el ||= document
       @$el = $(@el)

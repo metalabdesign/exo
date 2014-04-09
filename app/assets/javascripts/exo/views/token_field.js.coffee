@@ -420,8 +420,18 @@ namespace 'Exo.Views', (exports) ->
       node.className = @tokenClassName
       node
 
+    # @returns {boolean}
+    _shouldShowPlaceholder: (event) ->
+      @_collection.length
+
     _tokensChanged: (token) ->
       @_updatePlaceholder()
+
+      if @_shouldShowPlaceholder()
+        @inputPlaceholder?.style.display = 'none'
+      else
+        @inputPlaceholder?.style.display = ''
+
 
     # Get the display text for a model by calling either `displayAttr` or by trying common display
     # text attributes

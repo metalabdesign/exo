@@ -1,25 +1,32 @@
 #= require ./token_field
 #= require ./collection_list_popover
+
 namespace 'Exo.Views', (exports) ->
   class exports.AutocompleteTokenField extends Exo.Views.TokenField
-    resultsPopoverClass: Exo.Views.CollectionListPopover
-    showPopoverOnEmpty: false
 
     minInputValueLength: 1
 
-    # Allow tokens for queries not in the collection. Useful for creating.
+    # Allow tokens for queries not in the collection
     allowFallbackTokens: true
     showAllOnDownArrow: false
 
     # Attribute on models to search.
-    filterAttribute: "name"
+    filterAttribute: 'name'
 
+    # Results popover
+    resultsPopoverClass: Exo.Views.CollectionListPopover
     resultsPopoverOptions: null
+    showPopoverOnEmpty: false
 
-    initialize: (options = {}) ->
+
+    #-----------------------------------------------------------------------------
+    # Constructor
+    #-----------------------------------------------------------------------------
+
+    initialize: ->
       super
 
-      @resultsPopover = options.resultsPopover || new @resultsPopoverClass(
+      @resultsPopover ?= new @resultsPopoverClass(
         _.extend({
           appendTo: @$el
           target: @$el
@@ -27,9 +34,9 @@ namespace 'Exo.Views', (exports) ->
           setupEvents: false
           keyboardManager: @keyboardManager
           position:
-            my: "left top"
-            at: "left bottom"
-            collision: "none"
+            my: 'left top'
+            at: 'left bottom'
+            collision: 'none'
         }, @resultsPopoverOptions)
       )
 
@@ -38,14 +45,25 @@ namespace 'Exo.Views', (exports) ->
           displayAttr: @_itemDisplayText(model)
         }, model.attributes
 
-      @resultsPopover.on "item:selected", (model) ->
+      @resultsPopover.on 'item:selected', (model) ->
         model = if _.isString(model) then @_buildFallbackToken(model) else model
         @insertToken(model)
-        @$input?.val("")
+        @$input?.val('')
       , this
 
       @matcher = new Exo.Matcher
         filterAttribute: @filterAttribute
+
+      @on 'destroyed', @_destroyed
+      @on 'keypress', =>
+        @inputPlaceholder.style.display = if @_shouldShowPlaceholder() then 'block' else 'none'
+
+      this
+
+
+    #-----------------------------------------------------------------------------
+    # Instance Methods
+    #-----------------------------------------------------------------------------
 
     setSource: (source) ->
       @matcher.setSource(source)
@@ -53,13 +71,18 @@ namespace 'Exo.Views', (exports) ->
     addSource: (source) ->
       @matcher.addSource(source)
 
+
+    #-----------------------------------------------------------------------------
+    # Delegate Methods
+    #-----------------------------------------------------------------------------
+
     handleKeyUp: (key, e) ->
       switch key
-        when "up"
+        when 'up'
           return false # Prevent re-rendering when navigating auto-completer
-        when "down"
+        when 'down'
           # Buggy..
-          if @showAllOnDownArrow && @input.value == "" && !@resultsPopover.visible
+          if @showAllOnDownArrow && @input.value == '' && !@resultsPopover.visible
             @_showResultsPopover()
           else
             return false
@@ -70,11 +93,11 @@ namespace 'Exo.Views', (exports) ->
 
     handleKeyDown: (key, e) ->
       switch key
-        when "tab", "⇧+tab"
+        when 'tab', '⇧+tab'
           @_hideResultsPopover()
-        when "up", "down"
+        when 'up', 'down'
           return false # Prevent re-rendering when navigating auto-completer
-        when "enter"
+        when 'enter'
           if @selectedIndex > -1
             # Don't add tokens on 'enter', this happens by watching for
             # `item:selected` events on @resultsPopover instead
@@ -84,35 +107,35 @@ namespace 'Exo.Views', (exports) ->
 
       super
 
-    destroy: ->
-      @resultsPopover.off null, null, this
-      @resultsPopover = null
-      super
 
-    #
-    # Private
-    #
+    #-----------------------------------------------------------------------------
+    # Private Methods
+    #-----------------------------------------------------------------------------
 
-    _blur: (e) ->
-      super
-      @_hideResultsPopover()
-
+    # @returns {boolean}
     _shouldShowResultsPopover: (query) ->
-      if @_maxTokensExceeded()
-        false
-      else if @_queryMeetsMinLength(query)
-        true
-      else
-        false
+      !@_maxTokensExceeded() && @_queryMeetsMinLength(query)
 
-    # Should we append a fallback token item to the results collection?
-    #
-    # By default, we will *not* if the token already exists in the token field
-    # or if the query resulted in a perfect match with an existing option.
-    #
     # @returns {boolean}
     _shouldAddFallbackToken: (model, results) ->
       !@_tokenExists(model) && !(results[0]?.score == 1.0)
+
+    # @returns {boolean}
+    _shouldShowPlaceholder: (event) ->
+      @_collection.length || /[^\s]+/.test(@input.value)
+
+
+    #-----------------------------------------------------------------------------
+    # Event Handlers
+    #-----------------------------------------------------------------------------
+
+    _blur: (event) ->
+      super
+      @_hideResultsPopover()
+
+    _destroyed: =>
+      @resultsPopover.off(null, null, this)
+      @resultsPopover = null
 
     _queryEntered: (query) ->
       if @_shouldShowResultsPopover(query)
@@ -122,7 +145,7 @@ namespace 'Exo.Views', (exports) ->
 
     _showResultsPopover: _.debounce((query) ->
       @matcher.resultsForString query, (results) =>
-        models = _.pluck(results, "model")
+        models = _.pluck(results, 'model')
         collection = new Thorax.Collection(models)
 
         # Don't show tokens in the results collection that already exist in the token field

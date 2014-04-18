@@ -55,8 +55,6 @@ namespace 'Exo.Views', (exports) ->
         filterAttribute: @filterAttribute
 
       @on 'destroyed', @_destroyed
-      @on 'keypress', =>
-        @inputPlaceholder.style.display = if @_shouldShowPlaceholder() then 'block' else 'none'
 
       this
 
@@ -88,6 +86,7 @@ namespace 'Exo.Views', (exports) ->
             return false
         else
           @_queryEntered(@input.value)
+          @inputPlaceholder.style.display = if @_shouldShowPlaceholder() then '' else 'none'
 
       super
 
@@ -122,8 +121,7 @@ namespace 'Exo.Views', (exports) ->
 
     # @returns {boolean}
     _shouldShowPlaceholder: (event) ->
-      @_collection.length || /[^\s]+/.test(@input.value)
-
+      !@_collection.length && !@input.value.trim()
 
     #-----------------------------------------------------------------------------
     # Event Handlers

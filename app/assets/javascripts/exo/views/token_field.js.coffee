@@ -395,7 +395,6 @@ namespace 'Exo.Views', (exports) ->
         @selectTokenAtIndex(TokenField.TokenIndexes.Input)
 
       @$input.removeClass(@hiddenClass)
-
       @trigger("keypress", e)
 
     _updatePlaceholder: ->
@@ -422,15 +421,11 @@ namespace 'Exo.Views', (exports) ->
 
     # @returns {boolean}
     _shouldShowPlaceholder: (event) ->
-      @_collection.length
+      !@_collection.length
 
     _tokensChanged: (token) ->
       @_updatePlaceholder()
-
-      if @_shouldShowPlaceholder()
-        @inputPlaceholder?.style.display = 'none'
-      else
-        @inputPlaceholder?.style.display = ''
+      @inputPlaceholder?.style.display = if @_shouldShowPlaceholder() then '' else 'none'
 
 
     # Get the display text for a model by calling either `displayAttr` or by trying common display

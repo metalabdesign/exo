@@ -21,7 +21,7 @@ namespace 'Exo.Widgets', (exports) ->
 
       @_cache = for el in @$items.toArray()
         el = if match then $(match, el) else $(el)
-        $.trim(el.text().toLowerCase())
+        el.text().toLowerCase().trim()
 
     clear: ->
       @$el.val('').keyup()
@@ -30,7 +30,7 @@ namespace 'Exo.Widgets', (exports) ->
       if e.which == 27 # Escape
         return @clear()
 
-      query = $.trim(@$el.val().toLowerCase())
+      query = @$el.val().toLowerCase().trim()
       scores = []
 
       if !query

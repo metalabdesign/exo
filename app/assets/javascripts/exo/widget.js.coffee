@@ -7,8 +7,6 @@ namespace 'Exo', (exports) ->
     _.extend(@prototype, Backbone.Events) if _? && Backbone?.Events
 
     @register: (name, klass) ->
-      klass.name = name
-
       $.fn[name] = (params...) ->
         for el in this
           $el = $ el
@@ -28,15 +26,8 @@ namespace 'Exo', (exports) ->
       @setElement(el)
 
       @options = {}
-      dataOptions = {}
-      sanitizer = new RegExp("^#{ @constructor.name.toLowerCase() }(\\w+)")
-      for key, value of @el.dataset
-        if match = key.match(sanitizer)
-          realKey = match[1]
-          realKey = realKey[0].toLowerCase() + realKey.substr(1)
-          dataOptions[realKey] = value
 
-      @setOptions dataOptions, @defaults, options
+      @setOptions @defaults, options
 
     setOptions: (options...) ->
       @options = $.extend.apply null, [@options].concat options

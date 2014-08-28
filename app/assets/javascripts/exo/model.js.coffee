@@ -7,13 +7,6 @@ namespace 'Exo', (exports) ->
     # constructor.
     embeddedResources: null
 
-    initialize: ->
-      super
-
-      # ensure we always have an instance we can reference for our nested models
-      for attr, klass of (@embeddedResources || [])
-        @attributes[attr] = new klass() if !@attributes[attr]
-
     # Our nested models will trick the default implementation of isPopulated
     # to return true. We don't want that.
     isPopulated: ->
@@ -52,9 +45,28 @@ namespace 'Exo', (exports) ->
       else
         (attrs = {})[key] = val
 
-      # Intercept `set` calls to a registerd nested model, and call set on
-      # it instead
+      @_setEmbedResources(attrs, options)
+
+      super(attrs, options)
+
+    parse: (resp, options) ->
+      if resp # PATCH requests return an empty response
+        for attr, klass of (@embeddedResources || [])
+          data = resp[attr]
+          resp[attr] = new klass(data, options)
+
+      super(resp)
+
+    #
+    # Private
+    #
+
+    _setEmbedResources: (attrs, options) ->
       for attr, klass of (@embeddedResources || [])
+
+        # Instantiate embedded resource objects as attributes
+        @attributes[attr] = new klass() if !@attributes[attr]
+
         if attrs[attr] && @attributes[attr] instanceof klass
           data = attrs[attr]
 
@@ -70,13 +82,3 @@ namespace 'Exo', (exports) ->
             else
               # noop if we're setting a new model completely. Let super
               # fire change:attr like normal
-
-      super(attrs, options)
-
-    parse: (resp, options) ->
-      if resp # PATCH requests return an empty response
-        for attr, klass of (@embeddedResources || [])
-          data = resp[attr]
-          resp[attr] = new klass(data, options)
-
-      super(resp)

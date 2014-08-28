@@ -1,4 +1,5 @@
 require "exo/version"
+require "compass/sass_extensions/functions/files/retina_images"
 
 module Exo
   if defined? ::Rails::Engine
